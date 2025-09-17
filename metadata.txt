@@ -1,29 +1,75 @@
+# ISTools Plugin Metadata
+# Following QGIS Plugin Repository best practices and standards
+
 [general]
+# Plugin identification
 name=ISTools
 qgisMinimumVersion=3.0
 qgisMaximumVersion=3.99
-description=A collection of vectorization tools for QGIS including line extension, polygon generation, bounded polygon creation, and point on surface generation.
-about=ISTools (Irlan Souza Tools) is a QGIS plugin that provides essential vectorization tools to facilitate vector operations in QGIS. The plugin includes:
-    - Extend Lines: Automatically extend loose line endpoints to connect with nearby features
-    - Polygon Generator: Create polygons from point coordinates with automatic validation
-    - Bounded Polygon Generator: Generate polygons within a frame using delimiter layers
-    - Point on Surface Generator: Generate representative points within polygon features
-    
-    All tools feature intuitive user interfaces, comprehensive error handling, and support for various coordinate systems.
+
+# Plugin description
+description=🔧 Professional vectorization toolkit for QGIS - Extend lines, generate polygons, create bounded geometries, and place surface points with precision
+about=🚀 **ISTools** (Irlan Souza Tools) is a comprehensive QGIS plugin designed for professional GIS workflows, providing essential vectorization tools to streamline vector operations.
+
+    **🛠️ Core Features:**
+    • **Extend Lines**: Automatically extend loose line endpoints to connect with nearby features using intelligent snapping algorithms
+    • **Polygon Generator**: Create precise polygons from point coordinates with built-in validation and error handling
+    • **Bounded Polygon Generator**: Generate polygons within defined frames using delimiter layers for controlled spatial analysis
+    • **Point on Surface Generator**: Generate representative points within polygon features for labeling and analysis
+
+    **✨ Key Benefits:**
+    • Intuitive user interfaces with modern design principles
+    • Comprehensive error handling and user feedback
+    • Multi-language support (English/Portuguese)
+    • Compatible with various coordinate reference systems
+    • Optimized for professional GIS workflows
+    • Cross-platform compatibility (Windows, Linux, macOS)
+
+    **🎯 Perfect for:** Cartographers, GIS analysts, surveyors, urban planners, and geospatial professionals working with vector data processing and geometric operations.
+
+# Version and authorship
 version=1.3
 author=Irlan Souza, 3° Sgt Brazilian Army
 email=irlan.souza@eb.mil.br
+
+# Project links
 repository=https://github.com/irlansouza93/istools
 tracker=https://github.com/irlansouza93/istools/issues
 homepage=https://github.com/irlansouza93/istools
+
+# Visual and categorization
 icon=icon_istools.png
 category=Vector
-tags=vectorization,geometry,analysis,polygon,lines,spatial,processing,extend,generator,bounded,surface
+
+# Search and discovery
+tags=vectorization,geometry,analysis,polygon,lines,spatial,processing,extend,generator,bounded,surface,professional,toolkit,cartography,surveying,gis
+
+# Plugin characteristics
 experimental=False
 deprecated=False
 server=False
 hasProcessingProvider=False
-changelog=1.0: Initial release with ExtendLines and QgisPolygonGenerator tools
-    1.1: Added BoundedPolygonGenerator tool
-    1.2: Added PointOnSurfaceGenerator tool
-    1.3: Code refactoring, improved documentation, English translation, and enhanced user interface
+
+# Version history
+changelog=🚀 **Version 1.3** (Latest)
+    • Complete code refactoring and optimization
+    • Enhanced documentation with modern README
+    • Full English translation support
+    • Improved user interface design
+    • Better error handling and user feedback
+    • Cross-platform compatibility improvements
+    
+    📋 **Version 1.2**
+    • Added PointOnSurfaceGenerator tool
+    • Enhanced polygon validation algorithms
+    • Improved coordinate system handling
+    
+    🔧 **Version 1.1**
+    • Introduced BoundedPolygonGenerator tool
+    • Enhanced line extension algorithms
+    • Added multi-layer support
+    
+    🎉 **Version 1.0** (Initial Release)
+    • Core ExtendLines functionality
+    • Basic QgisPolygonGenerator tool
+    • Foundation architecture established
