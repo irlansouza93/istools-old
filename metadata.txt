@@ -1,0 +1,29 @@
+[general]
+name=ISTools
+qgisMinimumVersion=3.0
+qgisMaximumVersion=3.99
+description=A collection of vectorization tools for QGIS including line extension, polygon generation, bounded polygon creation, and point on surface generation.
+about=ISTools (Irlan Souza Tools) is a QGIS plugin that provides essential vectorization tools to facilitate vector operations in QGIS. The plugin includes:
+    - Extend Lines: Automatically extend loose line endpoints to connect with nearby features
+    - Polygon Generator: Create polygons from point coordinates with automatic validation
+    - Bounded Polygon Generator: Generate polygons within a frame using delimiter layers
+    - Point on Surface Generator: Generate representative points within polygon features
+    
+    All tools feature intuitive user interfaces, comprehensive error handling, and support for various coordinate systems.
+version=1.3
+author=Irlan Souza, 3° Sgt Brazilian Army
+email=irlan.souza@eb.mil.br
+repository=https://github.com/irlansouza93/istools
+tracker=https://github.com/irlansouza93/istools/issues
+homepage=https://github.com/irlansouza93/istools
+icon=icon_istools.png
+category=Vector
+tags=vectorization,geometry,analysis,polygon,lines,spatial,processing,extend,generator,bounded,surface
+experimental=False
+deprecated=False
+server=False
+hasProcessingProvider=False
+changelog=1.0: Initial release with ExtendLines and QgisPolygonGenerator tools
+    1.1: Added BoundedPolygonGenerator tool
+    1.2: Added PointOnSurfaceGenerator tool
+    1.3: Code refactoring, improved documentation, English translation, and enhanced user interface

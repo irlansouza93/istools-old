@@ -1,0 +1,48 @@
+# Compiled translation file for ISTools
+# Language: en
+# Generated from: istools_en.ts
+
+[ISTools]
+"ISTools" = "ISTools"
+"Error" = "Error"
+"No valid input layer selected or layer is empty" = "No valid input layer selected or layer is empty"
+"PolygonGenerator" = "PolygonGenerator"
+"Click on the map to define the center. Right-click to cancel." = "Click on the map to define the center. Right-click to cancel."
+"Extend Lines" = "Extend Lines"
+"Extends loose lines until they touch other lines" = "Extends loose lines until they touch other lines"
+"Polygon Generator" = "Polygon Generator"
+"Generates polygons from lines or areas around a point" = "Generates polygons from lines or areas around a point"
+"Bounded Polygon Generator" = "Bounded Polygon Generator"
+"Generates bounded polygons from a frame and line or polygon layers" = "Generates bounded polygons from a frame and line or polygon layers"
+"Point on Surface Generator" = "Point on Surface Generator"
+"Generates points inside selected polygons" = "Generates points inside selected polygons"
+
+[ExtendLines]
+"Extend Lines" = "Extend Lines"
+"No active layer selected" = "No active layer selected"
+"Active layer is not a line layer" = "Active layer is not a line layer"
+"No features selected" = "No features selected"
+"Lines extended successfully" = "Lines extended successfully"
+
+[PolygonGenerator]
+"Polygon Generator" = "Polygon Generator"
+"No vector layers found" = "No vector layers found"
+"Polygon created successfully" = "Polygon created successfully"
+
+[BoundedPolygonGenerator]
+"Bounded Polygon Generator" = "Bounded Polygon Generator"
+"Frame Layer" = "Frame Layer"
+"Delimiter Layers" = "Delimiter Layers"
+"Run" = "Run"
+"Cancel" = "Cancel"
+"Please select a frame layer" = "Please select a frame layer"
+"Please select at least one delimiter layer" = "Please select at least one delimiter layer"
+"Bounded polygons generated successfully" = "Bounded polygons generated successfully"
+
+[PointOnSurfaceGenerator]
+"Point on Surface Generator" = "Point on Surface Generator"
+"No active layer selected" = "No active layer selected"
+"Active layer is not a polygon layer" = "Active layer is not a polygon layer"
+"No features selected" = "No features selected"
+"Points on surface generated successfully" = "Points on surface generated successfully"
+
