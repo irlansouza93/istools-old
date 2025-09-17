@@ -184,6 +184,13 @@ Thumbs.db
 *.bak
 *.backup
 
+# QGIS specific
+*.qgs~
+*.qgz~
+
+# Development tools
+package_plugin.py
+
 # Development and testing
 test_data/
 tests/
