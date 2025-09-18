@@ -68,11 +68,11 @@ class ExtendLines:
         if not layer.isEditable():
             layer.startEditing()
         
-        # Create spatial index for efficient intersection queries
-        spatial_index = QgsSpatialIndex(layer.getFeatures())
+        # Create spatial index and layer mapping for all visible line layers
+        spatial_index, layer_mapping = self._create_multi_layer_spatial_index()
         
         # Process each selected feature
-        self._process_selected_features(layer, spatial_index)
+        self._process_selected_features(layer, spatial_index, layer_mapping)
         
         # Show completion message
         self.iface.messageBar().pushInfo(
@@ -104,23 +104,69 @@ class ExtendLines:
             
         return True
     
-    def _process_selected_features(self, layer, spatial_index):
+    def _create_multi_layer_spatial_index(self):
+        """Create a spatial index containing features from all visible line layers.
+        
+        Returns:
+            tuple: (QgsSpatialIndex, dict) - spatial index and feature-to-layer mapping
+        """
+        from qgis.core import QgsProject
+        
+        spatial_index = QgsSpatialIndex()
+        layer_mapping = {}  # Maps feature_id to (layer, original_feature_id)
+        
+        # Get all visible line layers from the project
+        project = QgsProject.instance()
+        layers = project.mapLayers().values()
+        
+        feature_counter = 0
+        
+        for layer in layers:
+            # Skip if not a line layer or not visible
+            if (not hasattr(layer, 'geometryType') or 
+                layer.geometryType() != QgsWkbTypes.LineGeometry or
+                not layer.renderer() or
+                not layer.renderer().symbol()):
+                continue
+            
+            # Check if layer is visible in the layer tree
+            layer_tree_root = project.layerTreeRoot()
+            layer_tree_layer = layer_tree_root.findLayer(layer.id())
+            if layer_tree_layer and not layer_tree_layer.isVisible():
+                continue
+            
+            # Add all features from this layer to the spatial index
+            for feature in layer.getFeatures():
+                if feature.hasGeometry():
+                    # Use a unique ID for the spatial index
+                    unique_id = feature_counter
+                    spatial_index.addFeature(feature, unique_id)
+                    
+                    # Map the unique ID back to the layer and original feature ID
+                    layer_mapping[unique_id] = (layer, feature.id())
+                    feature_counter += 1
+        
+        return spatial_index, layer_mapping
+
+    def _process_selected_features(self, layer, spatial_index, layer_mapping):
         """Process all selected features for line extension.
         
         Args:
             layer: QgsVectorLayer containing the line features
             spatial_index: QgsSpatialIndex for efficient spatial queries
+            layer_mapping: dict mapping spatial index IDs to (layer, feature_id)
         """
         for feature in layer.selectedFeatures():
-            self._extend_feature_endpoints(feature, layer, spatial_index)
+            self._extend_feature_endpoints(feature, layer, spatial_index, layer_mapping)
 
-    def _extend_feature_endpoints(self, feature, layer, spatial_index):
+    def _extend_feature_endpoints(self, feature, layer, spatial_index, layer_mapping):
         """Extend the endpoints of a line feature to connect with nearby lines.
         
         Args:
             feature: QgsFeature to process
             layer: QgsVectorLayer containing the features
             spatial_index: QgsSpatialIndex for spatial queries
+            layer_mapping: dict mapping spatial index IDs to (layer, feature_id)
         """
         geometry = feature.geometry()
         vertices = [QgsPointXY(v) for v in geometry.vertices()]
@@ -136,7 +182,7 @@ class ExtendLines:
             endpoint = vertices[endpoint_index]
             
             # Skip if endpoint is already connected to another line
-            if self._is_point_connected(endpoint, feature.id(), layer):
+            if self._is_point_connected(endpoint, feature.id(), layer, layer_mapping):
                 continue
             
             # Get the neighboring vertex to determine extension direction
@@ -144,8 +190,8 @@ class ExtendLines:
             neighbor_point = vertices[neighbor_index]
             
             # Find nearest intersection point
-            target_feature, intersection_point = self._find_nearest_intersection(
-                feature, endpoint, neighbor_point, layer, spatial_index
+            target_layer, target_feature, intersection_point = self._find_nearest_intersection(
+                feature, endpoint, neighbor_point, layer, spatial_index, layer_mapping
             )
             
             if not target_feature or not intersection_point:
@@ -161,7 +207,7 @@ class ExtendLines:
             geometry_modified = True
             
             # Add intersection point as vertex to target feature if needed
-            self._add_vertex_to_feature(target_feature, intersection_point, layer)
+            self._add_vertex_to_feature(target_feature, intersection_point, target_layer)
             
             # Update vertices list for potential second endpoint processing
             vertices = new_vertices
@@ -170,30 +216,39 @@ class ExtendLines:
         if geometry_modified:
             layer.updateFeature(feature)
     
-    def _is_point_connected(self, point, feature_id, layer):
-        """Check if a point is already connected to other features.
+    def _is_point_connected(self, point, feature_id, layer, layer_mapping):
+        """Check if a point is already connected to another line within tolerance.
         
         Args:
             point: QgsPointXY to check
-            feature_id: ID of the feature to exclude from check
-            layer: QgsVectorLayer to search in
+            feature_id: ID of the current feature to exclude from search
+            layer: QgsVectorLayer of the current feature
+            layer_mapping: dict mapping spatial index IDs to (layer, feature_id)
             
         Returns:
-            bool: True if point is connected, False otherwise
+            bool: True if point is connected to another line, False otherwise
         """
-        buffer_geometry = QgsGeometry.fromPointXY(point).buffer(
-            self.CONNECT_TOLERANCE, 1
-        )
-        request = QgsFeatureRequest().setFilterRect(buffer_geometry.boundingBox())
-        
-        for feature in layer.getFeatures(request):
-            if feature.id() == feature_id:
+        # Check connections in all layers through layer_mapping
+        for unique_id, (target_layer, target_feature_id) in layer_mapping.items():
+            # Skip the same feature
+            if target_layer == layer and target_feature_id == feature_id:
                 continue
-            if feature.geometry().distance(QgsGeometry.fromPointXY(point)) <= self.CONNECT_TOLERANCE:
-                return True
+                
+            target_feature = target_layer.getFeature(target_feature_id)
+            if not target_feature.hasGeometry():
+                continue
+                
+            target_geometry = target_feature.geometry()
+            
+            # Check if point is close to any vertex of the target feature
+            for vertex in target_geometry.vertices():
+                vertex_point = QgsPointXY(vertex)
+                if vertex_point.distance(point) <= self.CONNECT_TOLERANCE:
+                    return True
+                    
         return False
     
-    def _find_nearest_intersection(self, feature, endpoint, neighbor_point, layer, spatial_index):
+    def _find_nearest_intersection(self, feature, endpoint, neighbor_point, layer, spatial_index, layer_mapping):
         """Find the nearest intersection point for line extension.
         
         Args:
@@ -202,9 +257,10 @@ class ExtendLines:
             neighbor_point: QgsPointXY of the neighboring vertex
             layer: QgsVectorLayer containing features
             spatial_index: QgsSpatialIndex for spatial queries
+            layer_mapping: dict mapping spatial index IDs to (layer, feature_id)
             
         Returns:
-            tuple: (target_feature, intersection_point) or (None, None)
+            tuple: (target_layer, target_feature, intersection_point) or (None, None, None)
         """
         # Calculate extension direction
         dx = endpoint.x() - neighbor_point.x()
@@ -212,7 +268,7 @@ class ExtendLines:
         segment_length = math.hypot(dx, dy)
         
         if segment_length == 0:
-            return None, None
+            return None, None, None
             
         # Unit vector for extension direction
         unit_x, unit_y = dx / segment_length, dy / segment_length
@@ -231,15 +287,26 @@ class ExtendLines:
         candidate_ids = spatial_index.intersects(search_rect)
         
         # Find the closest intersection point
+        nearest_layer = None
         nearest_feature = None
         nearest_point = None
         min_distance = float('inf')
         
         for candidate_id in candidate_ids:
-            if candidate_id == feature.id():
+            # Get the layer and feature from mapping
+            if candidate_id not in layer_mapping:
                 continue
                 
-            candidate_feature = layer.getFeature(candidate_id)
+            target_layer, target_feature_id = layer_mapping[candidate_id]
+            
+            # Skip the same feature
+            if target_layer == layer and target_feature_id == feature.id():
+                continue
+                
+            candidate_feature = target_layer.getFeature(target_feature_id)
+            if not candidate_feature.hasGeometry():
+                continue
+                
             candidate_geometry = candidate_feature.geometry()
             
             # Calculate intersection between extension line and candidate feature
@@ -263,7 +330,7 @@ class ExtendLines:
                 distance = endpoint.distance(intersection_point)
                 
                 # Skip if intersection is too close (already connected) or at the same point
-                if distance <= self.CONNECT_TOLERANCE:
+                if distance <= 1.0:  # Ignore very close intersections
                     continue
                 
                 # Check if this intersection is closer than previous ones
@@ -271,16 +338,17 @@ class ExtendLines:
                     min_distance = distance
                     nearest_point = intersection_point
                     nearest_feature = candidate_feature
+                    nearest_layer = target_layer
         
-        return nearest_feature, nearest_point
+        return nearest_layer, nearest_feature, nearest_point
 
-    def _add_vertex_to_feature(self, feature, point, layer):
+    def _add_vertex_to_feature(self, feature, point, target_layer):
         """Add a vertex to a feature at the specified point if it lies on the line.
         
         Args:
             feature: QgsFeature to modify
             point: QgsPointXY where to add the vertex
-            layer: QgsVectorLayer containing the feature
+            target_layer: QgsVectorLayer containing the feature
         """
         geometry = feature.geometry()
         
@@ -319,7 +387,7 @@ class ExtendLines:
             # Update feature geometry
             new_geometry = QgsGeometry.fromPolylineXY(new_vertices)
             feature.setGeometry(new_geometry)
-            layer.updateFeature(feature)
+            target_layer.updateFeature(feature)
 
     def unload(self):
         """Clean up resources when the tool is unloaded.
