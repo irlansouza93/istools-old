@@ -1,39 +1,63 @@
 # -*- coding: utf-8 -*-
 """
-Bounded Polygon Generator Tool for QGIS Plugin
+/***************************************************************************
+ ISTools - Bounded Polygon Generator
+                                 A QGIS plugin
+ Professional vectorization toolkit for QGIS
+                              -------------------
+        begin                : 2025-01-15
+        git sha              : $Format:%H$
+        copyright            : (C) 2025 by Irlan Souza, 3° Sgt Brazilian Army
+        email                : irlansouza193@gmail.com
+ ***************************************************************************/
 
-This module provides functionality to generate polygons bounded by frame layers
-and delimited by line and polygon layers using QGIS processing algorithms.
-
-Author: Plugin Author
-Date: 2024
+/***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ ***************************************************************************/
 """
 
 from qgis.PyQt.QtWidgets import (
     QDialog, QVBoxLayout, QLabel, QListWidget, QListWidgetItem,
     QPushButton, QComboBox, QMessageBox
 )
+from qgis.PyQt.QtCore import QVariant
 from qgis.core import (
     QgsProject, QgsVectorLayer, QgsWkbTypes, QgsProcessingContext,
-    QgsProcessingFeedback
+    QgsProcessingFeedback, QgsField, QgsFeature, QgsGeometry,
+    QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsMessageLog, Qgis, QgsApplication
 )
+from .translations.translate import translate
 import processing
 
 
 class BoundedPolygonGenerator:
-    """Tool for generating bounded polygons from frame and delimiter layers.
+    """
+    A QGIS tool for generating bounded polygons using frame and delimiter layers.
     
-    This class provides functionality to create polygons that are bounded by
-    a frame layer and delimited by line and/or polygon layers using QGIS
-    processing algorithms.
+    This class provides functionality to create polygons bounded by a frame layer
+    and delimited by line or polygon layers through a dialog interface.
     """
     
-    # Output layer configuration
-    OUTPUT_LAYER_NAME = "BOUNDED_POLYGONS"
-    TARGET_CRS = "EPSG:31985"  # SIRGAS 2000 / UTM zone 25S
+    def tr(self, *string):
+        """
+        Traduz strings usando o novo sistema de tradução bilíngue.
+        
+        Args:
+            *string: (inglês, português) ou string única
+            
+        Returns:
+            str: String traduzida conforme o locale do QGIS
+        """
+        return translate(string, QgsApplication.locale()[:2])
     
     def __init__(self, iface):
-        """Initialize the BoundedPolygonGenerator tool.
+        """
+        Initialize the bounded polygon generator tool.
         
         Args:
             iface: QGIS interface object
@@ -42,389 +66,334 @@ class BoundedPolygonGenerator:
         self.dialog = None
 
     def activate_tool(self):
-        """Activate the bounded polygon generator tool.
-        
-        Creates and shows the dialog for selecting layers and generating polygons.
+        """
+        Activate the bounded polygon generation tool by showing the dialog.
         """
         self.dialog = PolygonGeneratorDialog(self.iface)
         self.dialog.show()
 
     def unload(self):
-        """Clean up resources when the tool is unloaded.
-        
-        Closes the dialog and clears references.
+        """
+        Clean up when the tool is unloaded.
         """
         if self.dialog:
             self.dialog.close()
             self.dialog = None
 
+
 class PolygonGeneratorDialog(QDialog):
-    """Dialog for bounded polygon generation configuration.
+    """
+    Dialog for configuring and running the bounded polygon generation process.
     
-    This dialog allows users to select frame layers and delimiter layers
-    for generating bounded polygons.
+    This dialog allows users to select frame layers and delimiter layers,
+    then generates bounded polygons based on the selected configuration.
     """
     
+    def tr(self, *string):
+        """
+        Traduz strings usando o novo sistema de tradução bilíngue.
+        
+        Args:
+            *string: (inglês, português) ou string única
+            
+        Returns:
+            str: String traduzida conforme o locale do QGIS
+        """
+        return translate(string, QgsApplication.locale()[:2])
+
     def __init__(self, iface):
-        """Initialize the polygon generator dialog.
+        """
+        Initialize the dialog interface.
         
         Args:
             iface: QGIS interface object
         """
         super().__init__()
         self.iface = iface
-        self._setup_ui()
-        self.populate_layers()
-    
-    def _setup_ui(self):
-        """Set up the user interface components."""
-        self.setWindowTitle("Bounded Polygon Generator")
+        self.setWindowTitle(self.tr("Bounded Polygon Generator", "Gerador de Polígonos Limitados"))
+        
+        # Create layout and widgets
         layout = QVBoxLayout()
         
         # Frame layer selection
-        layout.addWidget(QLabel("Frame Layer (Polygon):"))
+        layout.addWidget(QLabel(self.tr("Frame Layer (Polygon):", "Camada de Moldura (Polígono):")))
         self.frame_layer_combo = QComboBox()
         layout.addWidget(self.frame_layer_combo)
         
-        # Line delimiter layers
-        layout.addWidget(QLabel("Delimiter Layers (Line):"))
+        # Delimiter layers selection
+        layout.addWidget(QLabel(self.tr("Delimiter Layers (Line):", "Camadas Delimitadoras (Linha):")))
         self.line_layer_list = QListWidget()
         self.line_layer_list.setSelectionMode(QListWidget.MultiSelection)
         layout.addWidget(self.line_layer_list)
         
-        # Polygon delimiter layers
-        layout.addWidget(QLabel("Delimiter Layers (Polygon):"))
+        layout.addWidget(QLabel(self.tr("Delimiter Layers (Polygon):", "Camadas Delimitadoras (Polígono):")))
         self.poly_layer_list = QListWidget()
         self.poly_layer_list.setSelectionMode(QListWidget.MultiSelection)
         layout.addWidget(self.poly_layer_list)
         
-        # Generate button
-        self.run_button = QPushButton("Generate Polygons")
+        # Run button
+        self.run_button = QPushButton(self.tr("Generate Polygons", "Gerar Polígonos"))
         self.run_button.clicked.connect(self.run_script)
         layout.addWidget(self.run_button)
         
         self.setLayout(layout)
+        self.populate_layers()
 
     def populate_layers(self):
-        """Populate the layer selection widgets with available vector layers.
-        
-        Organizes layers by geometry type:
-        - Polygon layers: available for frame and polygon delimiters
-        - Line layers: available for line delimiters
+        """
+        Populate the layer selection widgets with available layers from the project.
         """
         layers = QgsProject.instance().mapLayers().values()
         
         for layer in layers:
-            if not isinstance(layer, QgsVectorLayer):
-                continue
+            if isinstance(layer, QgsVectorLayer):
+                name = layer.name()
+                item = QListWidgetItem(name)
+                item.setData(1000, layer)
                 
-            layer_name = layer.name()
-            list_item = QListWidgetItem(layer_name)
-            list_item.setData(1000, layer)
-            
-            if layer.geometryType() == QgsWkbTypes.PolygonGeometry:
-                # Add to frame layer combo and polygon delimiter list
-                self.frame_layer_combo.addItem(layer_name, layer)
-                self.poly_layer_list.addItem(list_item)
-            elif layer.geometryType() == QgsWkbTypes.LineGeometry:
-                # Add to line delimiter list
-                self.line_layer_list.addItem(list_item)
+                if layer.geometryType() == QgsWkbTypes.PolygonGeometry:
+                    # Add to frame layer combo and polygon delimiter list
+                    self.frame_layer_combo.addItem(name, layer)
+                    self.poly_layer_list.addItem(item.clone())
+                elif layer.geometryType() == QgsWkbTypes.LineGeometry:
+                    # Add to line delimiter list
+                    self.line_layer_list.addItem(item)
 
     def run_script(self):
-        """Execute the bounded polygon generation process.
+        """
+        Execute the bounded polygon generation process.
         
-        Validates input selections and runs the processing workflow
-        to generate bounded polygons.
+        This method performs the following steps:
+        1. Validate input selections
+        2. Create temporary merged layer with all delimiter geometries
+        3. Process geometries through dissolve, fix, and polygonize operations
+        4. Clip results by frame layer
+        5. Remove overlaps with delimiter polygons
+        6. Calculate areas and add features to output layer
         """
         try:
-            # Validate input selections
-            frame_layer, line_layers, poly_layers = self._validate_selections()
+            # Validate frame layer selection
+            frame_layer = self.frame_layer_combo.currentData()
+            if not frame_layer:
+                raise Exception(self.tr("Please select a frame layer.", "Por favor, selecione uma camada de moldura."))
+            
+            # Get selected delimiter layers
+            selected_line_layers = [
+                item.data(1000) for item in self.line_layer_list.selectedItems()
+            ]
+            selected_poly_layers = [
+                item.data(1000) for item in self.poly_layer_list.selectedItems()
+            ]
+            
+            if not selected_line_layers and not selected_poly_layers:
+                raise Exception(self.tr("Select at least one delimiter layer (line or polygon).", "Selecione pelo menos uma camada delimitadora (linha ou polígono)."))
             
             # Initialize processing context
             feedback = QgsProcessingFeedback()
             context = QgsProcessingContext()
+            project_crs = QgsProject.instance().crs().authid()
             
-            # Execute the processing workflow
-            result_layer = self._execute_processing_workflow(
-                frame_layer, line_layers, poly_layers, context, feedback
+            # Create output layer
+            output_layer = QgsVectorLayer(
+                f"Polygon?crs={project_crs}", 
+                "BOUNDED_POLYGONS", 
+                "memory"
+            )
+            provider = output_layer.dataProvider()
+            provider.addAttributes([
+                QgsField('id', QVariant.String),
+                QgsField('description', QVariant.String),
+                QgsField('area_otf', QVariant.Double)
+            ])
+            output_layer.updateFields()
+            output_layer.startEditing()
+            
+            # Create temporary layer for merged lines
+            merged = QgsVectorLayer(
+                f"LineString?crs={project_crs}", 
+                "merged_lines", 
+                "memory"
             )
             
-            # Add result to project and close dialog
-            result_layer.setName(BoundedPolygonGenerator.OUTPUT_LAYER_NAME)
-            QgsProject.instance().addMapLayer(result_layer)
+            # Add delimiter polygon features (converting to lines)
+            for layer in selected_poly_layers:
+                for feature in layer.getFeatures():
+                    geom = feature.geometry()
+                    if geom.isEmpty() or not geom.isGeosValid():
+                        continue
+                    
+                    boundary_geom = geom.convertToType(QgsWkbTypes.LineGeometry, True)
+                    if boundary_geom and not boundary_geom.isEmpty():
+                        new_feat = QgsFeature()
+                        new_feat.setGeometry(boundary_geom)
+                        merged.dataProvider().addFeature(new_feat)
+            
+            # Add delimiter line features
+            for layer in selected_line_layers:
+                for feature in layer.getFeatures():
+                    geom = feature.geometry()
+                    if geom.isEmpty() or not geom.isGeosValid():
+                        continue
+                    
+                    new_feat = QgsFeature()
+                    new_feat.setGeometry(geom)
+                    merged.dataProvider().addFeature(new_feat)
+            
+            # Add frame features (converting to lines)
+            for feature in frame_layer.getFeatures():
+                geom = feature.geometry()
+                if geom.isEmpty() or not geom.isGeosValid():
+                    continue
+                
+                boundary_geom = geom.convertToType(QgsWkbTypes.LineGeometry, True)
+                if boundary_geom and not boundary_geom.isEmpty():
+                    new_feat = QgsFeature()
+                    new_feat.setGeometry(boundary_geom)
+                    merged.dataProvider().addFeature(new_feat)
+            
+            merged.updateExtents()
+            
+            # Dissolve merged lines
+            dissolved = processing.run("native:dissolve", {
+                'INPUT': merged,
+                'OUTPUT': 'memory:'
+            }, context=context, feedback=feedback)['OUTPUT']
+            
+            # Fix geometries
+            fixed = processing.run("native:fixgeometries", {
+                'INPUT': dissolved,
+                'OUTPUT': 'memory:'
+            }, context=context, feedback=feedback)['OUTPUT']
+            
+            # Polygonize lines
+            try:
+                polygons = processing.run("native:linestopolygons", {
+                    'INPUT': fixed,
+                    'OUTPUT': 'memory:'
+                }, context=context, feedback=feedback)['OUTPUT']
+            except:
+                polygons = processing.run("native:polygonize", {
+                    'INPUT': fixed,
+                    'OUTPUT': 'memory:'
+                }, context=context, feedback=feedback)['OUTPUT']
+            
+            # Clip by frame layer
+            bounded = processing.run("native:intersection", {
+                'INPUT': polygons,
+                'OVERLAY': frame_layer,
+                'OUTPUT': 'memory:'
+            }, context=context, feedback=feedback)['OUTPUT']
+            
+            # Remove overlap with delimiter polygons
+            if selected_poly_layers:
+                merged_polys = processing.run("native:mergevectorlayers", {
+                    'LAYERS': selected_poly_layers,
+                    'CRS': project_crs,
+                    'OUTPUT': 'memory:'
+                }, context=context, feedback=feedback)['OUTPUT']
+                
+                final_result = processing.run("native:difference", {
+                    'INPUT': bounded,
+                    'OVERLAY': merged_polys,
+                    'OUTPUT': 'memory:'
+                }, context=context, feedback=feedback)['OUTPUT']
+            else:
+                final_result = bounded
+            
+            # Add 'id' field with UUID
+            final_result = processing.run("qgis:fieldcalculator", {
+                'INPUT': final_result,
+                'FIELD_NAME': 'id',
+                'FIELD_TYPE': 2,
+                'FIELD_LENGTH': 40,
+                'FIELD_PRECISION': 0,
+                'NEW_FIELD': True,
+                'FORMULA': "replace(replace(uuid(), '{', ''), '}', '')",
+                'OUTPUT': 'memory:'
+            }, context=context, feedback=feedback)['OUTPUT']
+            
+            # Add 'description' field
+            final_result = processing.run("qgis:fieldcalculator", {
+                'INPUT': final_result,
+                'FIELD_NAME': 'description',
+                'FIELD_TYPE': 2,
+                'FIELD_LENGTH': 255,
+                'FIELD_PRECISION': 0,
+                'NEW_FIELD': True,
+                'FORMULA': "NULL",
+                'OUTPUT': 'memory:'
+            }, context=context, feedback=feedback)['OUTPUT']
+            
+            # Add features to output layer with area calculation
+            num_features_added = 0
+            metric_crs = QgsCoordinateReferenceSystem('EPSG:31985')
+            transform_context = QgsProject.instance().transformContext()
+            
+            for feature in final_result.getFeatures():
+                new_feature = QgsFeature(output_layer.fields())
+                new_feature.setGeometry(feature.geometry())
+                
+                # Calculate area in metric CRS
+                try:
+                    original_geom = feature.geometry()
+                    xform = QgsCoordinateTransform(
+                        output_layer.crs(), 
+                        metric_crs, 
+                        transform_context
+                    )
+                    
+                    reprojected_geom = QgsGeometry(original_geom)
+                    transform_result = reprojected_geom.transform(xform)
+                    
+                    if (transform_result == 0 and 
+                        reprojected_geom.isGeosValid() and 
+                        not reprojected_geom.isEmpty()):
+                        
+                        area_m2 = reprojected_geom.area()
+                        new_feature.setAttribute('area_otf', area_m2)
+                        
+                        QgsMessageLog.logMessage(
+                            f"Calculated area: {area_m2} m² for feature with ID {feature['id']}",
+                            'BoundedPolygonGenerator',
+                            Qgis.Info
+                        )
+                    else:
+                        new_feature.setAttribute('area_otf', 0.0)
+                        QgsMessageLog.logMessage(
+                            f"Error in coordinate transformation for area calculation for feature with ID {feature['id']}",
+                            'BoundedPolygonGenerator',
+                            Qgis.Warning
+                        )
+                        
+                except Exception as e:
+                    new_feature.setAttribute('area_otf', 0.0)
+                    QgsMessageLog.logMessage(
+                        f"Error calculating area for feature with ID {feature['id']}: {str(e)}",
+                        'BoundedPolygonGenerator',
+                        Qgis.Critical
+                    )
+                
+                # Set other attributes
+                new_feature.setAttribute('id', feature['id'])
+                new_feature.setAttribute('description', feature['description'])
+                
+                if provider.addFeature(new_feature):
+                    num_features_added += 1
+            
+            # Finalize output layer
+            output_layer.updateExtents()
+            output_layer.triggerRepaint()
+            self.iface.mapCanvas().refreshAllLayers()
+            QgsProject.instance().addMapLayer(output_layer)
+            
+            # Close dialog and show success message
             self.close()
-            
             self.iface.messageBar().pushSuccess(
-                "Success", 
-                f"Layer '{BoundedPolygonGenerator.OUTPUT_LAYER_NAME}' created successfully."
+                self.tr("Success", "Sucesso"), 
+                self.tr(f"Layer 'BOUNDED_POLYGONS' created successfully. {num_features_added} features added.", f"Camada 'BOUNDED_POLYGONS' criada com sucesso. {num_features_added} feições adicionadas.")
             )
             
-        except Exception as error:
-            QMessageBox.critical(self, self.tr("Error"), str(error))
-    
-    def _validate_selections(self):
-        """Validate user layer selections.
-        
-        Returns:
-            tuple: (frame_layer, selected_line_layers, selected_poly_layers)
-            
-        Raises:
-            Exception: If validation fails
-        """
-        frame_layer = self.frame_layer_combo.currentData()
-        if not frame_layer:
-            raise Exception("Please select a frame layer.")
-            
-        selected_line_layers = [
-            item.data(1000) for item in self.line_layer_list.selectedItems()
-        ]
-        selected_poly_layers = [
-            item.data(1000) for item in self.poly_layer_list.selectedItems()
-        ]
-        
-        if not selected_line_layers and not selected_poly_layers:
-            raise Exception(
-                "Please select at least one delimiter layer (line or polygon)."
-            )
-            
-        return frame_layer, selected_line_layers, selected_poly_layers
-    
-    def _execute_processing_workflow(self, frame_layer, line_layers, poly_layers, context, feedback):
-        """Execute the complete processing workflow.
-        
-        Args:
-            frame_layer: QgsVectorLayer used as frame boundary
-            line_layers: List of line delimiter layers
-            poly_layers: List of polygon delimiter layers
-            context: QgsProcessingContext for processing operations
-            feedback: QgsProcessingFeedback for progress reporting
-            
-        Returns:
-            QgsVectorLayer: The final result layer with bounded polygons
-        """
-        # Convert polygon delimiters to lines
-        poly_line_layers = self._convert_polygons_to_lines(poly_layers, context, feedback)
-        
-        # Convert frame to lines
-        frame_lines = self._convert_frame_to_lines(frame_layer, context, feedback)
-        
-        # Merge all line layers
-        merged_lines = self._merge_all_lines(
-            line_layers, poly_line_layers, frame_lines, context, feedback
-        )
-        
-        # Process lines and create polygons
-        polygons = self._create_polygons_from_lines(merged_lines, context, feedback)
-        
-        # Clip polygons by frame
-        bounded_polygons = self._clip_by_frame(polygons, frame_layer, context, feedback)
-        
-        # Remove overlaps with polygon delimiters
-        if poly_layers:
-            final_polygons = self._remove_polygon_overlaps(
-                bounded_polygons, poly_layers, context, feedback
-            )
-        else:
-            final_polygons = bounded_polygons
-        
-        # Add attributes and reproject
-        return self._finalize_result_layer(final_polygons, context, feedback)
-    
-    def _convert_polygons_to_lines(self, poly_layers, context, feedback):
-        """Convert polygon layers to line layers.
-        
-        Args:
-            poly_layers: List of polygon layers to convert
-            context: QgsProcessingContext for processing operations
-            feedback: QgsProcessingFeedback for progress reporting
-            
-        Returns:
-            list: List of converted line layers
-        """
-        poly_line_layers = []
-        for poly_layer in poly_layers:
-            result = processing.run("native:polygonstolines", {
-                'INPUT': poly_layer,
-                'OUTPUT': 'memory:'
-            }, context=context, feedback=feedback)
-            poly_line_layers.append(result['OUTPUT'])
-        return poly_line_layers
-    
-    def _convert_frame_to_lines(self, frame_layer, context, feedback):
-        """Convert frame polygon layer to lines.
-        
-        Args:
-            frame_layer: Frame polygon layer to convert
-            context: QgsProcessingContext for processing operations
-            feedback: QgsProcessingFeedback for progress reporting
-            
-        Returns:
-            QgsVectorLayer: Converted frame lines layer
-        """
-        result = processing.run("native:polygonstolines", {
-            'INPUT': frame_layer,
-            'OUTPUT': 'memory:'
-        }, context=context, feedback=feedback)
-        return result['OUTPUT']
-    
-    def _merge_all_lines(self, line_layers, poly_line_layers, frame_lines, context, feedback):
-        """Merge all line layers into a single layer.
-        
-        Args:
-            line_layers: Original line delimiter layers
-            poly_line_layers: Converted polygon delimiter layers
-            frame_lines: Converted frame lines
-            context: QgsProcessingContext for processing operations
-            feedback: QgsProcessingFeedback for progress reporting
-            
-        Returns:
-            QgsVectorLayer: Merged and dissolved lines layer
-        """
-        # Merge all line layers
-        all_layers = line_layers + poly_line_layers + [frame_lines]
-        merged_result = processing.run("native:mergevectorlayers", {
-            'LAYERS': all_layers,
-            'OUTPUT': 'memory:'
-        }, context=context, feedback=feedback)
-        
-        # Dissolve merged lines
-        dissolved_result = processing.run("native:dissolve", {
-            'INPUT': merged_result['OUTPUT'],
-            'OUTPUT': 'memory:'
-        }, context=context, feedback=feedback)
-        
-        return dissolved_result['OUTPUT']
-    
-    def _create_polygons_from_lines(self, merged_lines, context, feedback):
-        """Create polygons from merged lines.
-        
-        Args:
-            merged_lines: Merged line layer
-            context: QgsProcessingContext for processing operations
-            feedback: QgsProcessingFeedback for progress reporting
-            
-        Returns:
-            QgsVectorLayer: Polygonized layer
-        """
-        # Fix geometries first
-        fixed_result = processing.run("native:fixgeometries", {
-            'INPUT': merged_lines,
-            'OUTPUT': 'memory:'
-        }, context=context, feedback=feedback)
-        
-        # Try polygonize, fallback to linestopolygons if needed
-        try:
-            polygonize_result = processing.run("native:linestopolygons", {
-                'INPUT': fixed_result['OUTPUT'],
-                'OUTPUT': 'memory:'
-            }, context=context, feedback=feedback)
-        except:
-            polygonize_result = processing.run("native:polygonize", {
-                'INPUT': fixed_result['OUTPUT'],
-                'OUTPUT': 'memory:'
-            }, context=context, feedback=feedback)
-        
-        return polygonize_result['OUTPUT']
-    
-    def _clip_by_frame(self, polygons, frame_layer, context, feedback):
-        """Clip polygons by frame boundary.
-        
-        Args:
-            polygons: Polygon layer to clip
-            frame_layer: Frame layer for clipping
-            context: QgsProcessingContext for processing operations
-            feedback: QgsProcessingFeedback for progress reporting
-            
-        Returns:
-            QgsVectorLayer: Clipped polygons
-        """
-        intersection_result = processing.run("native:intersection", {
-            'INPUT': polygons,
-            'OVERLAY': frame_layer,
-            'OUTPUT': 'memory:'
-        }, context=context, feedback=feedback)
-        
-        return intersection_result['OUTPUT']
-    
-    def _remove_polygon_overlaps(self, polygons, poly_layers, context, feedback):
-        """Remove overlaps with polygon delimiter layers.
-        
-        Args:
-            polygons: Polygon layer to process
-            poly_layers: Polygon delimiter layers
-            context: QgsProcessingContext for processing operations
-            feedback: QgsProcessingFeedback for progress reporting
-            
-        Returns:
-            QgsVectorLayer: Polygons with overlaps removed
-        """
-        # Merge all polygon delimiter layers
-        merged_polys_result = processing.run("native:mergevectorlayers", {
-            'LAYERS': poly_layers,
-            'OUTPUT': 'memory:'
-        }, context=context, feedback=feedback)
-        
-        # Remove overlaps using difference
-        difference_result = processing.run("native:difference", {
-            'INPUT': polygons,
-            'OVERLAY': merged_polys_result['OUTPUT'],
-            'OUTPUT': 'memory:'
-        }, context=context, feedback=feedback)
-        
-        return difference_result['OUTPUT']
-    
-    def _finalize_result_layer(self, polygons, context, feedback):
-        """Add attributes and reproject the final layer.
-        
-        Args:
-            polygons: Polygon layer to finalize
-            context: QgsProcessingContext for processing operations
-            feedback: QgsProcessingFeedback for progress reporting
-            
-        Returns:
-            QgsVectorLayer: Final processed layer
-        """
-        # Add ID field with UUID
-        with_id_result = processing.run("qgis:fieldcalculator", {
-            'INPUT': polygons,
-            'FIELD_NAME': 'id',
-            'FIELD_TYPE': 2,  # Text
-            'FIELD_LENGTH': 40,
-            'FIELD_PRECISION': 0,
-            'NEW_FIELD': True,
-            'FORMULA': "replace(replace(uuid(), '{', ''), '}', '')",
-            'OUTPUT': 'memory:'
-        }, context=context, feedback=feedback)
-        
-        # Add description field
-        with_desc_result = processing.run("qgis:fieldcalculator", {
-            'INPUT': with_id_result['OUTPUT'],
-            'FIELD_NAME': 'descricao',
-            'FIELD_TYPE': 2,  # Text
-            'FIELD_LENGTH': 255,
-            'FIELD_PRECISION': 0,
-            'NEW_FIELD': True,
-            'FORMULA': "NULL",
-            'OUTPUT': 'memory:'
-        }, context=context, feedback=feedback)
-        
-        # Reproject to target CRS
-        reprojected_result = processing.run("native:reprojectlayer", {
-            'INPUT': with_desc_result['OUTPUT'],
-            'TARGET_CRS': BoundedPolygonGenerator.TARGET_CRS,
-            'OUTPUT': 'memory:'
-        }, context=context, feedback=feedback)
-        
-        # Add area field (calculated after reprojection)
-        with_area_result = processing.run("qgis:fieldcalculator", {
-            'INPUT': reprojected_result['OUTPUT'],
-            'FIELD_NAME': 'area_otf',
-            'FIELD_TYPE': 0,  # Numeric decimal
-            'FIELD_LENGTH': 20,
-            'FIELD_PRECISION': 2,
-            'NEW_FIELD': True,
-            'FORMULA': "$area",
-            'OUTPUT': 'memory:'
-        }, context=context, feedback=feedback)
-        
-        return with_area_result['OUTPUT']
+        except Exception as e:
+            QMessageBox.critical(self, self.tr("Error", "Erro"), str(e))
+            if 'output_layer' in locals():
+                QgsProject.instance().removeMapLayer(output_layer.id())

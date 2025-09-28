@@ -8,7 +8,7 @@ qgisMinimumVersion=3.0
 qgisMaximumVersion=3.99
 
 # Plugin description
-description=🔧 Professional vectorization toolkit for QGIS - Extend lines, generate polygons, create bounded geometries, and place surface points with precision
+description=🔧 Professional vectorization toolkit for QGIS
 about=🚀 **ISTools** (Irlan Souza Tools) is a comprehensive QGIS plugin designed for professional GIS workflows, providing essential vectorization tools to streamline vector operations.
 
     **🛠️ Core Features:**
@@ -16,6 +16,7 @@ about=🚀 **ISTools** (Irlan Souza Tools) is a comprehensive QGIS plugin design
     • **Polygon Generator**: Create precise polygons from point coordinates with built-in validation and error handling
     • **Bounded Polygon Generator**: Generate polygons within defined frames using delimiter layers for controlled spatial analysis
     • **Point on Surface Generator**: Generate representative points within polygon features for labeling and analysis
+    • **Intersection Line**: Insert shared vertices at line intersections within selected areas for precise topology management
 
     **✨ Key Benefits:**
     • Intuitive user interfaces with modern design principles
@@ -28,21 +29,21 @@ about=🚀 **ISTools** (Irlan Souza Tools) is a comprehensive QGIS plugin design
     **🎯 Perfect for:** Cartographers, GIS analysts, surveyors, urban planners, and geospatial professionals working with vector data processing and geometric operations.
 
 # Version and authorship
-version=1.3
+version=1.4
 author=Irlan Souza, 3° Sgt Brazilian Army
-email=irlan.souza@eb.mil.br
+email=irlansouza193@gmail.com
 
 # Project links
-repository=https://github.com/irlansouza93/istools
-tracker=https://github.com/irlansouza93/istools/issues
-homepage=https://github.com/irlansouza93/istools
+repository=https://github.com/irlansouza93/istools-qgis-plugin
+tracker=https://github.com/irlansouza93/istools-qgis-plugin/issues
+homepage=https://github.com/irlansouza93/istools-qgis-plugin
 
 # Visual and categorization
 icon=icon_istools.png
 category=Vector
 
 # Search and discovery
-tags=vectorization,geometry,analysis,polygon,lines,spatial,processing,extend,generator,bounded,surface,professional,toolkit,cartography,surveying,gis
+tags=vectorization,geometry,analysis,polygon,lines,spatial,processing,extend,generator,bounded,surface,intersection,professional,toolkit,cartography,surveying,gis
 
 # Plugin characteristics
 experimental=False
@@ -51,7 +52,14 @@ server=False
 hasProcessingProvider=False
 
 # Version history
-changelog=🚀 **Version 1.3** (Latest)
+changelog=🚀 **Version 1.4** (Latest)
+    • Added IntersectionLineTool for inserting shared vertices at line intersections
+    • Enhanced topology management capabilities
+    • Improved rectangle selection interface for intersection processing
+    • Updated documentation with new tool usage instructions
+    • Extended translation support for intersection functionality
+    
+    📋 **Version 1.3**
     • Complete code refactoring and optimization
     • Enhanced documentation with modern README
     • Full English translation support
@@ -59,12 +67,12 @@ changelog=🚀 **Version 1.3** (Latest)
     • Better error handling and user feedback
     • Cross-platform compatibility improvements
     
-    📋 **Version 1.2**
+    🔧 **Version 1.2**
     • Added PointOnSurfaceGenerator tool
     • Enhanced polygon validation algorithms
     • Improved coordinate system handling
     
-    🔧 **Version 1.1**
+    🎉 **Version 1.1**
     • Introduced BoundedPolygonGenerator tool
     • Enhanced line extension algorithms
     • Added multi-layer support

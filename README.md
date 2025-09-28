@@ -1,198 +1,208 @@
-# 🛠️ ISTools Plugin for QGIS
+# 🛠️ Plugin ISTools para QGIS
 
 <div align="center">
 
-![ISTools Logo](icon_istools.png)
+![Logo ISTools](icon_istools.png)
 
-**Advanced Vector Processing Tools for QGIS**
+**Ferramentas Avançadas de Processamento Vetorial para QGIS**
 
-[![QGIS Version](https://img.shields.io/badge/QGIS-3.0+-brightgreen.svg)](https://qgis.org)
-[![Version](https://img.shields.io/badge/Version-1.3-blue.svg)](https://github.com/irlansouza/istools)
-[![License](https://img.shields.io/badge/License-GPL--3.0-red.svg)](LICENSE.txt)
-[![Language](https://img.shields.io/badge/Language-Python-yellow.svg)](https://python.org)
+[![Versão QGIS](https://img.shields.io/badge/QGIS-3.0+-brightgreen.svg)](https://qgis.org)
+[![Versão](https://img.shields.io/badge/Versão-1.3-blue.svg)](https://github.com/irlansouza/istools)
+[![Licença](https://img.shields.io/badge/Licença-GPL--3.0-red.svg)](LICENSE.txt)
+[![Linguagem](https://img.shields.io/badge/Linguagem-Python-yellow.svg)](https://python.org)
 
-*Enhance your QGIS workflow with powerful vector processing capabilities*
+*Aprimore seu fluxo de trabalho no QGIS com poderosas capacidades de processamento vetorial*
 
 </div>
 
 ---
 
-## 🌟 Overview
+## 🌟 Visão Geral
 
-**ISTools** is a comprehensive QGIS plugin that provides essential vector data processing tools designed to streamline your GIS workflow. Whether you're working with lines, polygons, or points, ISTools offers intuitive solutions for common geometric operations with support for multiple coordinate reference systems.
+**ISTools** é um plugin abrangente para QGIS que fornece ferramentas essenciais de processamento de dados vetoriais projetadas para otimizar seu fluxo de trabalho em SIG. Seja trabalhando com linhas, polígonos ou pontos, o ISTools oferece soluções intuitivas para operações geométricas comuns com suporte para múltiplos sistemas de referência de coordenadas.
 
-## ✨ Features
+## ✨ Funcionalidades
 
-### 🔧 Available Tools
+### 🔧 Ferramentas Disponíveis
 
-| Tool | Description | Icon |
-|------|-------------|------|
-| **🔗 Extend Lines** | Extend line geometries by specified distances at start/end points | ![Extend Lines](icon_extend_lines.png) |
-| **📐 Polygon Generator** | Create polygons from selected points with customizable parameters | ![Polygon Generator](icon_polygon_generator.png) |
-| **🎯 Bounded Polygon Generator** | Generate polygons within specified boundary constraints | ![Bounded Polygon](icon_bounded_polygon_generator.png) |
-| **📍 Point on Surface Generator** | Generate representative points guaranteed to be on polygon surfaces | ![Point on Surface](icon_point_on_surface_generator.png) |
+| Ferramenta | Descrição | Ícone |
+|------------|-----------|-------|
+| **🔗 Estender Linhas** | Estende geometrias de linha por distâncias especificadas nos pontos inicial/final | ![Estender Linhas](icon_extend_lines.png) |
+| **📐 Gerador de Polígonos** | Cria polígonos a partir de pontos selecionados com parâmetros personalizáveis | ![Gerador de Polígonos](icon_polygon_generator.png) |
+| **🎯 Gerador de Polígonos Limitados** | Gera polígonos dentro de restrições de limite especificadas | ![Polígono Limitado](icon_bounded_polygon_generator.png) |
+| **📍 Gerador de Pontos na Superfície** | Gera pontos representativos garantidos de estar nas superfícies dos polígonos | ![Ponto na Superfície](icon_point_on_surface_generator.png) |
+| **✂️ Interseção de Linhas** | Insere vértices compartilhados nas interseções de linhas dentro de uma área selecionada | ![Interseção de Linhas](icon_intersection_line.png) |
 
-### 🚀 Key Capabilities
+### 🚀 Capacidades Principais
 
-- ✅ **Multi-CRS Support** - Works seamlessly with different coordinate reference systems
-- ✅ **Batch Processing** - Process multiple features simultaneously
-- ✅ **Interactive Interface** - User-friendly dialogs with real-time feedback
-- ✅ **Multilingual** - Available in English and Portuguese (Brazil)
-- ✅ **QGIS Integration** - Native integration with QGIS processing framework
-
----
-
-## 📋 Requirements
-
-- 🖥️ **QGIS**: Version 3.0 or higher
-- 📊 **Data**: Vector layers (points, lines, or polygons)
-- 🗺️ **CRS**: Appropriate coordinate reference system for your data
+- ✅ **Suporte Multi-SRC** - Funciona perfeitamente com diferentes sistemas de referência de coordenadas
+- ✅ **Processamento em Lote** - Processa múltiplas feições simultaneamente
+- ✅ **Interface Interativa** - Diálogos amigáveis com feedback em tempo real
+- ✅ **Multilíngue** - Disponível em Inglês e Português (Brasil)
+- ✅ **Integração QGIS** - Integração nativa com o framework de processamento do QGIS
 
 ---
 
-## 🔧 Installation
+## 📋 Requisitos
 
-### 📦 From QGIS Plugin Repository (Recommended)
+- 🖥️ **QGIS**: Versão 3.0 ou superior
+- 📊 **Dados**: Camadas vetoriais (pontos, linhas ou polígonos)
+- 🗺️ **SRC**: Sistema de referência de coordenadas apropriado para seus dados
 
-1. Open QGIS
-2. Navigate to **Plugins** → **Manage and Install Plugins**
-3. Search for **"ISTools"**
-4. Click **Install Plugin**
+---
 
-### 📁 Manual Installation
+## 🔧 Instalação
 
-1. Download the latest `istools_v1.3.zip` from releases
-2. Open QGIS
-3. Go to **Plugins** → **Manage and Install Plugins**
-4. Click **Install from ZIP**
-5. Select the downloaded ZIP file
-6. Click **Install Plugin**
+### 📦 Do Repositório de Plugins do QGIS (Recomendado)
 
-### 👨‍💻 Development Installation
+1. Abra o QGIS
+2. Navegue para **Plugins** → **Gerenciar e Instalar Plugins**
+3. Procure por **"ISTools"**
+4. Clique em **Instalar Plugin**
+
+### 📁 Instalação Manual
+
+1. Baixe o arquivo `istools_v1.3.zip` mais recente das releases
+2. Abra o QGIS
+3. Vá para **Plugins** → **Gerenciar e Instalar Plugins**
+4. Clique em **Instalar do ZIP**
+5. Selecione o arquivo ZIP baixado
+6. Clique em **Instalar Plugin**
+
+### 👨‍💻 Instalação para Desenvolvimento
 
 ```bash
-# Clone the repository
+# Clone o repositório
 git clone https://github.com/irlansouza/istools.git
 
-# Navigate to QGIS plugins directory
+# Navegue para o diretório de plugins do QGIS
 cd ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/
 
-# Create symbolic link (Linux/Mac) or copy folder (Windows)
-ln -s /path/to/istools/istools ./istools
+# Crie um link simbólico (Linux/Mac) ou copie a pasta (Windows)
+ln -s /caminho/para/istools/istools ./istools
 ```
 
 ---
 
-## 🎯 Usage Guide
+## 🎯 Guia de Uso
 
-### 🔗 Extend Lines Tool
+### 🔗 Ferramenta Estender Linhas
 
-Perfect for extending line geometries in both directions:
+Perfeita para estender geometrias de linha em ambas as direções:
 
-1. **Select** a line layer in the Layers Panel
-2. **Access** the tool via ISTools toolbar or menu
-3. **Configure** extension parameters:
-   - Start distance (meters)
-   - End distance (meters)
-   - Output layer name
-4. **Execute** and review results
+1. **Selecione** uma camada de linha no Painel de Camadas
+2. **Acesse** a ferramenta via barra de ferramentas ou menu do ISTools
+3. **Configure** os parâmetros de extensão:
+   - Distância inicial (metros)
+   - Distância final (metros)
+   - Nome da camada de saída
+4. **Execute** e revise os resultados
 
-### 📐 Polygon Generator Tool
+### 📐 Ferramenta Gerador de Polígonos
 
-Create polygons from point collections:
+Crie polígonos a partir de coleções de pontos:
 
-1. **Select** a point layer
-2. **Choose** polygon generation method
-3. **Set** buffer distance and parameters
-4. **Generate** polygon output
+1. **Selecione** uma camada de pontos
+2. **Escolha** o método de geração de polígonos
+3. **Defina** a distância do buffer e parâmetros
+4. **Gere** a saída do polígono
 
-### 🎯 Advanced Features
+### ✂️ Ferramenta Interseção de Linhas
 
-- **Snapping Settings**: Enable snapping for precise digitizing
-- **CRS Management**: Ensure consistent coordinate systems
-- **Closed Boundaries**: Maintain topology for polygon operations
+Perfeita para inserir vértices compartilhados em interseções de linhas:
 
----
+1. **Selecione** camadas de linha no Painel de Camadas
+2. **Acesse** a ferramenta via barra de ferramentas ou menu do ISTools
+3. **Desenhe** um retângulo na área onde deseja processar as interseções
+4. **Confirme** a operação e revise os vértices inseridos nas interseções
 
-## 💡 Tips & Best Practices
+### 🎯 Funcionalidades Avançadas
 
-| 💡 **Tip** | **Description** |
-|------------|-----------------|
-| 🗺️ **CRS Consistency** | Ensure all layers use the same coordinate reference system |
-| 🎯 **Snapping** | Enable snapping settings for precise geometry creation |
-| 🔄 **Backup Data** | Always backup your data before processing |
-| ⚡ **Performance** | For large datasets, consider processing in smaller batches |
+- **Configurações de Snap**: Habilite o snap para digitalização precisa
+- **Gerenciamento de SRC**: Garanta sistemas de coordenadas consistentes
+- **Limites Fechados**: Mantenha a topologia para operações de polígonos
 
 ---
 
-## 🔧 Troubleshooting
+## 💡 Dicas e Melhores Práticas
+
+| 💡 **Dica** | **Descrição** |
+|-------------|---------------|
+| 🗺️ **Consistência de SRC** | Garanta que todas as camadas usem o mesmo sistema de referência de coordenadas |
+| 🎯 **Snap** | Habilite as configurações de snap para criação precisa de geometrias |
+| 🔄 **Backup de Dados** | Sempre faça backup dos seus dados antes do processamento |
+| ⚡ **Performance** | Para grandes conjuntos de dados, considere processar em lotes menores |
+
+---
+
+## 🔧 Solução de Problemas
 
 <details>
-<summary><strong>🚫 Plugin icons not showing</strong></summary>
+<summary><strong>🚫 Ícones do plugin não aparecem</strong></summary>
 
-**Solution**: Restart QGIS or refresh the interface via **View** → **Panels** → **Toolbars**
+**Solução**: Reinicie o QGIS ou atualize a interface via **Exibir** → **Painéis** → **Barras de Ferramentas**
 </details>
 
 <details>
-<summary><strong>❌ "No active layer" error</strong></summary>
+<summary><strong>❌ Erro "Nenhuma camada ativa"</strong></summary>
 
-**Solution**: Ensure you have selected an appropriate vector layer in the Layers Panel
+**Solução**: Certifique-se de ter selecionado uma camada vetorial apropriada no Painel de Camadas
 </details>
 
 <details>
-<summary><strong>⚠️ CRS mismatch warnings</strong></summary>
+<summary><strong>⚠️ Avisos de incompatibilidade de SRC</strong></summary>
 
-**Solution**: Reproject layers to a common coordinate reference system before processing
+**Solução**: Reprojete as camadas para um sistema de referência de coordenadas comum antes do processamento
 </details>
 
 <details>
-<summary><strong>🐌 Slow performance with large datasets</strong></summary>
+<summary><strong>🐌 Performance lenta com grandes conjuntos de dados</strong></summary>
 
-**Solution**: Process data in smaller chunks or consider using QGIS processing algorithms for batch operations
+**Solução**: Processe os dados em pedaços menores ou considere usar algoritmos de processamento do QGIS para operações em lote
 </details>
 
 ---
 
-## 🤝 Contributing
+## 🤝 Contribuindo
 
-We welcome contributions! Here's how you can help:
+Damos as boas-vindas às contribuições! Veja como você pode ajudar:
 
-### 🐛 Bug Reports
-- Use the [GitHub Issues](https://github.com/irlansouza/istools/issues) page
-- Provide detailed reproduction steps
-- Include QGIS version and system information
+### 🐛 Relatórios de Bugs
+- Use a página [GitHub Issues](https://github.com/irlansouza/istools/issues)
+- Forneça passos detalhados de reprodução
+- Inclua a versão do QGIS e informações do sistema
 
-### 💻 Code Contributions
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+### 💻 Contribuições de Código
+1. Faça um fork do repositório
+2. Crie uma branch de funcionalidade: `git checkout -b feature/funcionalidade-incrivel`
+3. Faça commit das mudanças: `git commit -m 'Adiciona funcionalidade incrível'`
+4. Faça push para a branch: `git push origin feature/funcionalidade-incrivel`
+5. Abra um Pull Request
 
-### 🌍 Translations
-Help translate ISTools to your language! Translation files are located in the `i18n/` directory.
-
----
-
-## 📄 License
-
-This project is licensed under the **GNU General Public License v3.0** - see the [LICENSE.txt](LICENSE.txt) file for details.
+### 🌍 Traduções
+Ajude a traduzir o ISTools para seu idioma! Os arquivos de tradução estão localizados no diretório `i18n/`.
 
 ---
 
-## 👨‍💻 Author & Support
+## 📄 Licença
+
+Este projeto está licenciado sob a **Licença Pública Geral GNU v3.0** - veja o arquivo [LICENSE.txt](LICENSE.txt) para detalhes.
+
+---
+
+## 👨‍💻 Autor e Suporte
 
 <div align="center">
 
-**Developed by [Irlan Souza](https://github.com/irlansouza)**
+**Desenvolvido por [Irlan Souza](https://github.com/irlansouza)**
 
 [![GitHub](https://img.shields.io/badge/GitHub-irlansouza-black.svg?logo=github)](https://github.com/irlansouza)
-[![Email](https://img.shields.io/badge/Email-Contact-blue.svg?logo=gmail)](mailto:irlansouza@example.com)
+[![Email](https://img.shields.io/badge/Email-Contato-blue.svg?logo=gmail)](mailto:irlansouza@example.com)
 
 ---
 
-### 🌟 **Star this repository if ISTools helped you!** ⭐
+### 🌟 **Dê uma estrela neste repositório se o ISTools te ajudou!** ⭐
 
-*Made with ❤️ for the QGIS community*
+*Feito com ❤️ para a comunidade QGIS*
 
 </div>

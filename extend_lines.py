@@ -1,398 +1,351 @@
 # -*- coding: utf-8 -*-
 """
-Extend Lines Tool for QGIS Plugin
+/***************************************************************************
+ ISTools - Extend Lines
+                                 A QGIS plugin
+ Professional vectorization toolkit for QGIS
+                              -------------------
+        begin                : 2025-01-15
+        git sha              : $Format:%H$
+        copyright            : (C) 2025 by Irlan Souza, 3° Sgt Brazilian Army
+        email                : irlansouza193@gmail.com
+ ***************************************************************************/
 
-This module provides functionality to extend line features to connect
-with nearby lines, eliminating loose ends in line networks.
-
-Author: Plugin Author
-Date: 2024
+/***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ ***************************************************************************/
 """
 
-from qgis.PyQt.QtCore import QCoreApplication
+from qgis.gui import QgsMapToolIdentifyFeature
 from qgis.core import (
-    QgsPointXY,
-    QgsGeometry,
-    QgsFeatureRequest,
-    QgsWkbTypes,
-    QgsSpatialIndex
+    QgsProject, QgsGeometry, QgsPointXY, QgsLineString, 
+    QgsSpatialIndex, QgsFeature, QgsWkbTypes, QgsPoint, QgsApplication
 )
+from qgis.PyQt.QtWidgets import QInputDialog, QMessageBox
+from qgis.utils import iface
+from .translations.translate import translate
 import math
 
 
 class ExtendLines:
-    """Tool for extending line features to connect with nearby lines.
+    """
+    A QGIS tool for extending line features to touch other line features.
     
-    This class provides functionality to automatically extend line endpoints
-    to connect with nearby line features, helping to create connected
-    line networks without manual editing.
+    This tool allows users to extend selected line features until they intersect
+    with other line features in the project. The extension is performed in the
+    direction of the line's bearing at each endpoint.
     """
     
-    # Configuration constants
-    MAX_EXTENSION_DISTANCE = 100.0  # Maximum distance to search for lines
-    CONNECT_TOLERANCE = 1e-6  # Tolerance for considering points connected
-    INDEX_BUFFER = 0.001  # Buffer for spatial index searches
-    
-    def __init__(self, iface):
-        """Initialize the ExtendLines tool.
+    def tr(self, *string):
+        """
+        Traduz strings usando o novo sistema de tradução bilíngue.
         
         Args:
-            iface: QGIS interface object
+            *string: (inglês, português) ou string única
+            
+        Returns:
+            str: String traduzida conforme o locale do QGIS
+        """
+        return translate(string, QgsApplication.locale()[:2])
+    
+    def __init__(self, iface):
+        """
+        Initialize the ExtendLines tool.
+        
+        Args:
+            iface: QGIS interface object providing access to the map canvas,
+                  layers, and other QGIS functionality.
         """
         self.iface = iface
 
-    def tr(self, message):
-        """Get the translation for a string using Qt translation API.
-        
-        Args:
-            message: String to be translated
-            
-        Returns:
-            str: Translated string
-        """
-        return QCoreApplication.translate('ExtendLines', message)
-
     def run(self):
-        """Execute the line extension process.
-        
-        This method processes selected line features and extends their endpoints
-        to connect with nearby lines within the extension distance.
         """
-        # Validate input layer and selection
-        if not self._validate_input():
+        Execute the line extension process.
+        
+        This method performs the following steps:
+        1. Validates the active layer is a line layer
+        2. Checks for selected features
+        3. Prompts user to select target layer
+        4. Extends selected lines to intersect with target layer features
+        5. Updates geometries and adds topological points
+        """
+        # Validate active layer
+        source_layer = self.iface.activeLayer()
+        if not source_layer or source_layer.geometryType() != QgsWkbTypes.LineGeometry:
+            QMessageBox.warning(None, self.tr("Error", "Erro"), self.tr("Activate a line layer as source before executing.", "Ative uma camada de linha como origem antes de executar."))
             return
         
-        layer = self.iface.activeLayer()
+        # Start editing session
+        source_layer.startEditing()
         
-        # Ensure layer is editable
-        if not layer.isEditable():
-            layer.startEditing()
+        # Check for selected features
+        selected_features = source_layer.selectedFeatures()
+        if not selected_features:
+            QMessageBox.information(None, self.tr("Selection", "Seleção"), self.tr("No lines selected. Activating selection tool.", "Nenhuma linha selecionada. Ativando ferramenta de seleção."))
+            self.iface.actionSelectRectangle().trigger()
+            print(self.tr("Select lines using the activated tool and run the script again to proceed.", "Selecione linhas usando a ferramenta ativada e execute o script novamente para prosseguir."))
+            return
         
-        # Create spatial index and layer mapping for all visible line layers
-        spatial_index, layer_mapping = self._create_multi_layer_spatial_index()
+        print(self.tr("{} line(s) selected found. Proceeding.", "{} linha(s) selecionada(s) encontrada(s). Prosseguindo.").format(len(selected_features)))
+        
+        # Get available line layers for target selection
+        line_layers = [layer.name() for layer in QgsProject.instance().mapLayers().values() 
+                       if layer.type() == 0 and layer.geometryType() == QgsWkbTypes.LineGeometry]
+        if not line_layers:
+            QMessageBox.warning(None, self.tr("Error", "Erro"), self.tr("No line layers found in the project.", "Nenhuma camada de linha encontrada no projeto."))
+            return
+        
+        # Prompt user to select target layer
+        target_name, ok = QInputDialog.getItem(
+            None, self.tr("Target Layer", "Camada de Destino"), self.tr("Select the target layer (to be touched):", "Selecione a camada de destino (a ser tocada):"), 
+            line_layers, 0, False
+        )
+        if not ok:
+            print(self.tr("Operation cancelled.", "Operação cancelada."))
+            return
+        
+        # Get target layer and start editing
+        target_layer = QgsProject.instance().mapLayersByName(target_name)[0]
+        target_layer.startEditing()
+        
+        # Build spatial index for target layer features
+        selected_ids = [f.id() for f in selected_features]
+        index_target = QgsSpatialIndex()
+        for feat in target_layer.getFeatures():
+            # Skip selected features if target is same as source layer
+            if target_layer == source_layer and feat.id() in selected_ids:
+                continue
+            index_target.insertFeature(feat)
+        
+        # Get current canvas extent for visibility checks
+        canvas_extent = self.iface.mapCanvas().extent()
+        extensions_performed = False
         
         # Process each selected feature
-        self._process_selected_features(layer, spatial_index, layer_mapping)
+        for selected_feature in selected_features:
+            geom = selected_feature.geometry()
+            
+            # Check if feature is visible in current canvas extent
+            if not geom.boundingBox().intersects(canvas_extent):
+                QMessageBox.warning(
+                    None, self.tr("Warning", "Aviso"), 
+                    self.tr(f"Selected feature is outside canvas view for ID {selected_feature.id()}. Skipping.", f"Feição selecionada está fora da visualização do canvas para ID {selected_feature.id()}. Pulando.")
+                )
+                print(self.tr("Feature ID {} outside canvas view. Skipping.", "ID da feição {} fora da visualização do canvas. Pulando.").format(selected_feature.id()))
+                continue
+            
+            # Extract line points from geometry
+            if geom.isMultipart():
+                line_points = geom.asMultiPolyline()[0]
+            else:
+                line_points = geom.asPolyline()
+            
+            # Validate line has at least 2 points
+            if len(line_points) < 2:
+                print(self.tr("Feature ID {} invalid (less than 2 points). Skipping.", "ID da feição {} inválido (menos de 2 pontos). Pulando.").format(selected_feature.id()))
+                continue
+            
+            # Check if endpoints already intersect with target features
+            start_vertex_geom = QgsGeometry.fromPointXY(line_points[0])
+            end_vertex_geom = QgsGeometry.fromPointXY(line_points[-1])
+            ignore_start = False
+            ignore_end = False
+            
+            # Check start vertex intersection
+            candidates = index_target.intersects(start_vertex_geom.boundingBox())
+            for fid in candidates:
+                feat = target_layer.getFeature(fid)
+                if start_vertex_geom.intersects(feat.geometry()):
+                    ignore_start = True
+                    break
+            
+            # Check end vertex intersection
+            candidates = index_target.intersects(end_vertex_geom.boundingBox())
+            for fid in candidates:
+                feat = target_layer.getFeature(fid)
+                if end_vertex_geom.intersects(feat.geometry()):
+                    ignore_end = True
+                    break
+            
+            # Skip if both endpoints already intersect
+            if ignore_start and ignore_end:
+                print(self.tr("Both endpoints of feature ID {} already intersect. Skipping.", "Ambos os pontos finais da feição ID {} já se intersectam. Pulando.").format(selected_feature.id()))
+                continue
+            
+            # Calculate bearing for start point extension
+            start_point = line_points[0]
+            start_p1 = line_points[1]
+            start_dx = start_point.x() - start_p1.x()
+            start_dy = start_point.y() - start_p1.y()
+            start_bearing = math.atan2(start_dy, start_dx)
+            
+            # Calculate bearing for end point extension
+            end_point = line_points[-1]
+            end_p0 = line_points[-2]
+            end_dx = end_point.x() - end_p0.x()
+            end_dy = end_point.y() - end_p0.y()
+            end_bearing = math.atan2(end_dy, end_dx)
+            
+            # Set extension length (large value to ensure intersection)
+            extension_length = 10000
+            
+            # Find closest intersection for start point
+            start_point_inter = None
+            start_dist = float('inf')
+            start_target_id = None
+            if not ignore_start:
+                start_ext_x = start_point.x() + extension_length * math.cos(start_bearing)
+                start_ext_y = start_point.y() + extension_length * math.sin(start_bearing)
+                start_ext_final = QgsPointXY(start_ext_x, start_ext_y)
+                start_ext_line = QgsGeometry.fromPolylineXY([start_point, start_ext_final])
+                start_point_inter, start_dist, start_target_id = self.find_closest_intersection(
+                    start_ext_line, start_point, start_dx, start_dy, index_target, target_layer
+                )
+            
+            # Find closest intersection for end point
+            end_point_inter = None
+            end_dist = float('inf')
+            end_target_id = None
+            if not ignore_end:
+                end_ext_x = end_point.x() + extension_length * math.cos(end_bearing)
+                end_ext_y = end_point.y() + extension_length * math.sin(end_bearing)
+                end_ext_final = QgsPointXY(end_ext_x, end_ext_y)
+                end_ext_line = QgsGeometry.fromPolylineXY([end_point, end_ext_final])
+                end_point_inter, end_dist, end_target_id = self.find_closest_intersection(
+                    end_ext_line, end_point, end_dx, end_dy, index_target, target_layer
+                )
+            
+            # Determine which endpoint to extend based on closest intersection
+            if start_dist == float('inf') and end_dist == float('inf'):
+                QMessageBox.warning(
+                    None, self.tr("Warning", "Aviso"), 
+                    self.tr(f"No available lines for interaction with feature ID {selected_feature.id()}. Skipping.", f"Nenhuma linha disponível para interação com a feição ID {selected_feature.id()}. Pulando.")
+                )
+                continue
+            elif start_dist < end_dist:
+                chosen_point = start_point_inter
+                chosen_target_id = start_target_id
+                is_start = True
+                print(self.tr("Extending start (touches first) for feature ID {}.", "Estendendo início (toca primeiro) para feição ID {}.").format(selected_feature.id()))
+            else:
+                chosen_point = end_point_inter
+                chosen_target_id = end_target_id
+                is_start = False
+                print(self.tr("Extending end (touches first) for feature ID {}.", "Estendendo fim (toca primeiro) para feição ID {}.").format(selected_feature.id()))
+            
+            # Check if intersection point is visible in canvas
+            chosen_point_geom = QgsGeometry.fromPointXY(chosen_point)
+            if not chosen_point_geom.boundingBox().intersects(canvas_extent):
+                QMessageBox.warning(
+                    None, self.tr("Warning", "Aviso"), 
+                    self.tr(f"No visible interactions in canvas for feature ID {selected_feature.id()}. Skipping.", f"Nenhuma interação visível no canvas para feição ID {selected_feature.id()}. Pulando.")
+                )
+                continue
+            
+            # Create new line geometry with extended point
+            new_line_points = list(line_points)
+            if is_start:
+                new_line_points.insert(0, chosen_point)
+            else:
+                new_line_points.append(chosen_point)
+            
+            # Update source feature geometry
+            new_geom = (
+                QgsGeometry.fromPolylineXY(new_line_points) if not geom.isMultipart() 
+                else QgsGeometry.fromMultiPolylineXY([new_line_points])
+            )
+            source_layer.changeGeometry(selected_feature.id(), new_geom)
+            
+            # Add topological point to target feature if intersection occurred
+            if chosen_target_id is not None:
+                target_feat = target_layer.getFeature(chosen_target_id)
+                target_geom = QgsGeometry(target_feat.geometry())
+                added = target_geom.addTopologicalPoint(QgsPoint(chosen_point.x(), chosen_point.y()))
+                if added:
+                    target_layer.changeGeometry(chosen_target_id, target_geom)
+                    print(self.tr("Shared vertex added to target layer for feature ID {}.", "Vértice compartilhado adicionado à camada de destino para feição ID {}.").format(selected_feature.id()))
+                else:
+                    print(self.tr("Failed to add vertex (already exists?) for feature ID {}.", "Falha ao adicionar vértice (já existe?) para feição ID {}.").format(selected_feature.id()))
+            
+            extensions_performed = True
         
         # Show completion message
-        self.iface.messageBar().pushInfo(
-            self.tr("Processing Complete"),
-            self.tr("Loose ends connected without creating duplicate vertices. Save the layer to confirm.")
-        )
-    
-    def _validate_input(self):
-        """Validate the active layer and feature selection.
-        
-        Returns:
-            bool: True if input is valid, False otherwise
-        """
-        layer = self.iface.activeLayer()
-        
-        if not layer or layer.geometryType() != QgsWkbTypes.LineGeometry:
-            self.iface.messageBar().pushWarning(
-                self.tr("Error"), 
-                self.tr("Please select an active line layer.")
+        if extensions_performed:
+            self.iface.messageBar().pushInfo(
+                self.tr("Completed", "Concluído"), 
+                self.tr("Extension complete.", "Extensão concluída.")
             )
-            return False
-            
-        if layer.selectedFeatureCount() == 0:
-            self.iface.messageBar().pushWarning(
-                self.tr("Error"), 
-                self.tr("Please select at least one line feature.")
-            )
-            return False
-            
-        return True
-    
-    def _create_multi_layer_spatial_index(self):
-        """Create a spatial index containing features from all visible line layers.
+        else:
+            QMessageBox.information(None, self.tr("Completed", "Concluído"), self.tr("No extension performed.", "Nenhuma extensão realizada."))
         
-        Returns:
-            tuple: (QgsSpatialIndex, dict) - spatial index and feature-to-layer mapping
+        # Activate pan tool
+        self.iface.actionPan().trigger()
+
+    def find_closest_intersection(self, ext_line, extend_point, dx, dy, index_target, target_layer):
         """
-        from qgis.core import QgsProject
+        Find the closest intersection point between an extension line and target features.
         
-        spatial_index = QgsSpatialIndex()
-        layer_mapping = {}  # Maps feature_id to (layer, original_feature_id)
-        
-        # Get all visible line layers from the project
-        project = QgsProject.instance()
-        layers = project.mapLayers().values()
-        
-        feature_counter = 0
-        
-        for layer in layers:
-            # Skip if not a line layer or not visible
-            if (not hasattr(layer, 'geometryType') or 
-                layer.geometryType() != QgsWkbTypes.LineGeometry or
-                not layer.renderer() or
-                not layer.renderer().symbol()):
-                continue
+        Args:
+            ext_line (QgsGeometry): Extended line geometry for intersection testing
+            extend_point (QgsPointXY): Original endpoint being extended
+            dx (float): X component of extension direction vector
+            dy (float): Y component of extension direction vector
+            index_target (QgsSpatialIndex): Spatial index of target layer features
+            target_layer (QgsVectorLayer): Target layer containing features to intersect
             
-            # Check if layer is visible in the layer tree
-            layer_tree_root = project.layerTreeRoot()
-            layer_tree_layer = layer_tree_root.findLayer(layer.id())
-            if layer_tree_layer and not layer_tree_layer.isVisible():
-                continue
+        Returns:
+            tuple: (closest_point, closest_distance, target_feature_id)
+                - closest_point (QgsPointXY): Coordinates of closest intersection
+                - closest_distance (float): Distance to closest intersection
+                - target_feature_id (int): ID of target feature containing intersection
+        """
+        closest_dist = float('inf')
+        closest_point = None
+        target_id = None
+        
+        # Get candidate features that intersect with extension line bounding box
+        candidates = index_target.intersects(ext_line.boundingBox())
+        
+        for fid in candidates:
+            feat = target_layer.getFeature(fid)
+            intersect_geom = ext_line.intersection(feat.geometry())
             
-            # Add all features from this layer to the spatial index
-            for feature in layer.getFeatures():
-                if feature.hasGeometry():
-                    # Use a unique ID for the spatial index
-                    unique_id = feature_counter
-                    spatial_index.addFeature(feature, unique_id)
+            # Process intersection if it exists and is a point geometry
+            if not intersect_geom.isEmpty() and intersect_geom.type() == QgsWkbTypes.PointGeometry:
+                # Handle both single and multi-point intersections
+                points = (
+                    intersect_geom.asMultiPoint() if intersect_geom.isMultipart() 
+                    else [intersect_geom.asPoint()]
+                )
+                
+                for ip in points:
+                    ip_xy = QgsPointXY(ip.x(), ip.y())
                     
-                    # Map the unique ID back to the layer and original feature ID
-                    layer_mapping[unique_id] = (layer, feature.id())
-                    feature_counter += 1
-        
-        return spatial_index, layer_mapping
-
-    def _process_selected_features(self, layer, spatial_index, layer_mapping):
-        """Process all selected features for line extension.
-        
-        Args:
-            layer: QgsVectorLayer containing the line features
-            spatial_index: QgsSpatialIndex for efficient spatial queries
-            layer_mapping: dict mapping spatial index IDs to (layer, feature_id)
-        """
-        for feature in layer.selectedFeatures():
-            self._extend_feature_endpoints(feature, layer, spatial_index, layer_mapping)
-
-    def _extend_feature_endpoints(self, feature, layer, spatial_index, layer_mapping):
-        """Extend the endpoints of a line feature to connect with nearby lines.
-        
-        Args:
-            feature: QgsFeature to process
-            layer: QgsVectorLayer containing the features
-            spatial_index: QgsSpatialIndex for spatial queries
-            layer_mapping: dict mapping spatial index IDs to (layer, feature_id)
-        """
-        geometry = feature.geometry()
-        vertices = [QgsPointXY(v) for v in geometry.vertices()]
-        
-        if len(vertices) < 2:
-            return  # Skip invalid geometries
-        
-        # Track if geometry was modified
-        geometry_modified = False
-        
-        # Process both endpoints (first and last vertex)
-        for endpoint_index in (0, -1):
-            endpoint = vertices[endpoint_index]
-            
-            # Skip if endpoint is already connected to another line
-            if self._is_point_connected(endpoint, feature.id(), layer, layer_mapping):
-                continue
-            
-            # Get the neighboring vertex to determine extension direction
-            neighbor_index = 1 if endpoint_index == 0 else len(vertices) - 2
-            neighbor_point = vertices[neighbor_index]
-            
-            # Find nearest intersection point
-            target_layer, target_feature, intersection_point = self._find_nearest_intersection(
-                feature, endpoint, neighbor_point, layer, spatial_index, layer_mapping
-            )
-            
-            if not target_feature or not intersection_point:
-                continue
-            
-            # Update the vertex to the intersection point
-            new_vertices = vertices.copy()
-            new_vertices[endpoint_index] = intersection_point
-            
-            # Update the feature geometry
-            new_geometry = QgsGeometry.fromPolylineXY(new_vertices)
-            feature.setGeometry(new_geometry)
-            geometry_modified = True
-            
-            # Add intersection point as vertex to target feature if needed
-            self._add_vertex_to_feature(target_feature, intersection_point, target_layer)
-            
-            # Update vertices list for potential second endpoint processing
-            vertices = new_vertices
-        
-        # Update the feature in the layer if it was modified
-        if geometry_modified:
-            layer.updateFeature(feature)
-    
-    def _is_point_connected(self, point, feature_id, layer, layer_mapping):
-        """Check if a point is already connected to another line within tolerance.
-        
-        Args:
-            point: QgsPointXY to check
-            feature_id: ID of the current feature to exclude from search
-            layer: QgsVectorLayer of the current feature
-            layer_mapping: dict mapping spatial index IDs to (layer, feature_id)
-            
-        Returns:
-            bool: True if point is connected to another line, False otherwise
-        """
-        # Check connections in all layers through layer_mapping
-        for unique_id, (target_layer, target_feature_id) in layer_mapping.items():
-            # Skip the same feature
-            if target_layer == layer and target_feature_id == feature_id:
-                continue
-                
-            target_feature = target_layer.getFeature(target_feature_id)
-            if not target_feature.hasGeometry():
-                continue
-                
-            target_geometry = target_feature.geometry()
-            
-            # Check if point is close to any vertex of the target feature
-            for vertex in target_geometry.vertices():
-                vertex_point = QgsPointXY(vertex)
-                if vertex_point.distance(point) <= self.CONNECT_TOLERANCE:
-                    return True
+                    # Check if intersection is in the correct direction
+                    vec_x = ip_xy.x() - extend_point.x()
+                    vec_y = ip_xy.y() - extend_point.y()
+                    dot = vec_x * dx + vec_y * dy
                     
-        return False
-    
-    def _find_nearest_intersection(self, feature, endpoint, neighbor_point, layer, spatial_index, layer_mapping):
-        """Find the nearest intersection point for line extension.
+                    # Only consider intersections in the extension direction
+                    if dot > 0:
+                        dist = extend_point.distance(ip_xy)
+                        if 0 < dist < closest_dist:
+                            closest_dist = dist
+                            closest_point = ip_xy
+                            target_id = fid
         
-        Args:
-            feature: QgsFeature being extended
-            endpoint: QgsPointXY of the line endpoint
-            neighbor_point: QgsPointXY of the neighboring vertex
-            layer: QgsVectorLayer containing features
-            spatial_index: QgsSpatialIndex for spatial queries
-            layer_mapping: dict mapping spatial index IDs to (layer, feature_id)
-            
-        Returns:
-            tuple: (target_layer, target_feature, intersection_point) or (None, None, None)
-        """
-        # Calculate extension direction
-        dx = endpoint.x() - neighbor_point.x()
-        dy = endpoint.y() - neighbor_point.y()
-        segment_length = math.hypot(dx, dy)
-        
-        if segment_length == 0:
-            return None, None, None
-            
-        # Unit vector for extension direction
-        unit_x, unit_y = dx / segment_length, dy / segment_length
-        
-        # Create a long extension line to find all possible intersections
-        max_extended_point = QgsPointXY(
-            endpoint.x() + unit_x * self.MAX_EXTENSION_DISTANCE,
-            endpoint.y() + unit_y * self.MAX_EXTENSION_DISTANCE
-        )
-        
-        # Create extension line geometry
-        extension_line = QgsGeometry.fromPolylineXY([endpoint, max_extended_point])
-        
-        # Find candidate features using spatial index
-        search_rect = extension_line.boundingBox().buffered(self.INDEX_BUFFER)
-        candidate_ids = spatial_index.intersects(search_rect)
-        
-        # Find the closest intersection point
-        nearest_layer = None
-        nearest_feature = None
-        nearest_point = None
-        min_distance = float('inf')
-        
-        for candidate_id in candidate_ids:
-            # Get the layer and feature from mapping
-            if candidate_id not in layer_mapping:
-                continue
-                
-            target_layer, target_feature_id = layer_mapping[candidate_id]
-            
-            # Skip the same feature
-            if target_layer == layer and target_feature_id == feature.id():
-                continue
-                
-            candidate_feature = target_layer.getFeature(target_feature_id)
-            if not candidate_feature.hasGeometry():
-                continue
-                
-            candidate_geometry = candidate_feature.geometry()
-            
-            # Calculate intersection between extension line and candidate feature
-            intersection = extension_line.intersection(candidate_geometry)
-            
-            if intersection.isEmpty():
-                continue
-                
-            # Process all intersection points to find the closest one
-            intersection_points = []
-            if intersection.wkbType() == QgsWkbTypes.Point:
-                intersection_points = [intersection.asPoint()]
-            elif intersection.wkbType() == QgsWkbTypes.MultiPoint:
-                intersection_points = [pt.asPoint() for pt in intersection.asGeometryCollection()]
-            else:
-                # For line intersections, get vertices
-                intersection_points = [QgsPointXY(vertex) for vertex in intersection.vertices()]
-            
-            for intersection_point in intersection_points:
-                # Calculate distance from endpoint to intersection
-                distance = endpoint.distance(intersection_point)
-                
-                # Skip if intersection is too close (already connected) or at the same point
-                if distance <= 1.0:  # Ignore very close intersections
-                    continue
-                
-                # Check if this intersection is closer than previous ones
-                if distance < min_distance:
-                    min_distance = distance
-                    nearest_point = intersection_point
-                    nearest_feature = candidate_feature
-                    nearest_layer = target_layer
-        
-        return nearest_layer, nearest_feature, nearest_point
-
-    def _add_vertex_to_feature(self, feature, point, target_layer):
-        """Add a vertex to a feature at the specified point if it lies on the line.
-        
-        Args:
-            feature: QgsFeature to modify
-            point: QgsPointXY where to add the vertex
-            target_layer: QgsVectorLayer containing the feature
-        """
-        geometry = feature.geometry()
-        
-        # Check if point is already a vertex (within tolerance)
-        for vertex in geometry.vertices():
-            vertex_point = QgsPointXY(vertex)
-            if vertex_point.distance(point) < self.CONNECT_TOLERANCE:
-                return  # Point already exists as vertex
-        
-        # Find the closest segment and add vertex there
-        closest_distance = float('inf')
-        closest_segment_index = -1
-        
-        vertices = [QgsPointXY(v) for v in geometry.vertices()]
-        
-        for i in range(len(vertices) - 1):
-            segment_start = vertices[i]
-            segment_end = vertices[i + 1]
-            
-            # Create line segment
-            segment = QgsGeometry.fromPolylineXY([segment_start, segment_end])
-            
-            # Calculate distance from point to segment
-            distance = segment.distance(QgsGeometry.fromPointXY(point))
-            
-            if distance < closest_distance and distance < self.CONNECT_TOLERANCE:
-                closest_distance = distance
-                closest_segment_index = i
-        
-        # Add vertex to the closest segment if found
-        if closest_segment_index >= 0:
-            new_vertices = vertices.copy()
-            # Insert the new vertex after the segment start
-            new_vertices.insert(closest_segment_index + 1, point)
-            
-            # Update feature geometry
-            new_geometry = QgsGeometry.fromPolylineXY(new_vertices)
-            feature.setGeometry(new_geometry)
-            target_layer.updateFeature(feature)
+        return closest_point, closest_dist, target_id
 
     def unload(self):
-        """Clean up resources when the tool is unloaded.
+        """
+        Clean up resources when the tool is unloaded.
         
-        This method is called when the plugin is being unloaded.
+        This method is called when the plugin is disabled or QGIS is closed.
         Currently no cleanup is required for this tool.
         """
         pass

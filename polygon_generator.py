@@ -1,107 +1,150 @@
 # -*- coding: utf-8 -*-
 """
-Polygon Generator Tool for QGIS
+/***************************************************************************
+ ISTools - Polygon Generator
+                                 A QGIS plugin
+ Professional vectorization toolkit for QGIS
+                              -------------------
+        begin                : 2025-01-15
+        git sha              : $Format:%H$
+        copyright            : (C) 2025 by Irlan Souza, 3° Sgt Brazilian Army
+        email                : irlansouza193@gmail.com
+ ***************************************************************************/
 
-Generates polygons from lines or areas around a clicked point.
-This tool creates polygons by polygonizing visible line and polygon layers
-and selecting the polygon that contains the clicked point.
-
-Author: Irlan Souza
-Version: 1.2
-License: GPL v2
+/***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ ***************************************************************************/
 """
 
 import os
 import uuid
 from qgis.PyQt.QtCore import QVariant
 from qgis.PyQt.QtGui import QColor
+from qgis.PyQt.QtWidgets import QMessageBox
 from qgis.core import (
     QgsProject, QgsVectorLayer, QgsFeature, QgsGeometry,
-    QgsField, QgsMessageLog, Qgis,
+    QgsField, QgsMessageLog, Qgis, QgsApplication,
     QgsWkbTypes, QgsPointXY, QgsSymbol, QgsSingleSymbolRenderer,
     QgsCoordinateReferenceSystem, QgsCoordinateTransform
 )
 from qgis.gui import QgsMapToolEmitPoint, QgsVertexMarker
+from .translations.translate import translate
 import processing
 
 
 class QgisPolygonGenerator:
-    CAMADA_SAIDA = "POLIGONOS_CRIADOS"
-
-    def __init__(self, iface):
-        """Initialize the Polygon Generator tool.
+    """
+    A QGIS tool for generating polygons by clicking on the map canvas.
+    
+    This class provides functionality to create polygons from existing line and polygon
+    layers in the project by using the polygonize algorithm and selecting the polygon
+    that contains the clicked point.
+    """
+    
+    OUTPUT_LAYER_NAME = "GENERATED_POLYGONS"
+    
+    def tr(self, *string):
+        """
+        Traduz strings usando o novo sistema de tradução bilíngue.
         
         Args:
-            iface: QGIS interface instance
+            *string: (inglês, português) ou string única
+            
+        Returns:
+            str: String traduzida conforme o locale do QGIS
+        """
+        return translate(string, QgsApplication.locale()[:2])
+    
+    def __init__(self, iface):
+        """
+        Initialize the polygon generator tool.
+        
+        Args:
+            iface: QGIS interface object
         """
         self.iface = iface
         self.canvas = iface.mapCanvas()
-        self.tool = QgsMapToolEmitPoint(self.canvas)
+        self.map_tool = QgsMapToolEmitPoint(self.canvas)
         self.marker = None
-
+    
     def activate_tool(self):
-        """Activate the polygon generation tool.
+        """
+        Activate the polygon generation tool.
         
-        Checks for valid visible layers and sets up the map tool for capturing clicks.
-        Shows appropriate messages to guide the user.
+        Checks for valid layers and sets up the map tool for capturing clicks.
         """
         valid_layers = self._get_valid_layers()
         if not valid_layers:
-            self.iface.messageBar().pushWarning('PolygonGenerator', 'Nenhuma camada visível de linha ou área encontrada no projeto.')
+            QMessageBox.information(
+                None,
+                'PolygonGenerator',
+                self.tr('No visible layers found in the project.', 'Nenhuma camada visível encontrada no projeto.')
+            )
             return
         
-        self.tool.canvasClicked.connect(self.capture_and_create)
-        self.canvas.setMapTool(self.tool)
-        self.iface.messageBar().pushInfo('PolygonGenerator', 'Clique no mapa para definir o centro. Clique com o botão direito para cancelar.')
+        self.map_tool.canvasClicked.connect(self.capture_and_create)
+        self.canvas.setMapTool(self.map_tool)
+        QMessageBox.information(
+            None,
+            'PolygonGenerator',
+            self.tr('Click to define the center. Right-click to cancel.', 'Clique para definir o centro. Botão direito cancela.')
+        )
     
     def _get_valid_layers(self):
-        """Get list of valid visible line and polygon layers.
+        """
+        Get all visible line and polygon layers from the project.
         
         Returns:
-            list: List of valid QgsVectorLayer instances
+            list: List of valid QgsVectorLayer objects
         """
         root = QgsProject.instance().layerTreeRoot()
         valid_layers = []
-
-        for lyr in QgsProject.instance().mapLayers().values():
-            if not isinstance(lyr, QgsVectorLayer):
+        
+        for layer in QgsProject.instance().mapLayers().values():
+            if not isinstance(layer, QgsVectorLayer):
                 continue
-
-            # checar visibilidade pelo layer tree
-            node = root.findLayer(lyr.id())
+                
+            node = root.findLayer(layer.id())
             if node is None or not node.isVisible():
                 continue
-
-            # aceitar apenas linhas e polígonos
-            if QgsWkbTypes.geometryType(lyr.wkbType()) in [QgsWkbTypes.LineGeometry, QgsWkbTypes.PolygonGeometry]:
-                valid_layers.append(lyr)
-
+                
+            geometry_type = QgsWkbTypes.geometryType(layer.wkbType())
+            if geometry_type in [QgsWkbTypes.LineGeometry, QgsWkbTypes.PolygonGeometry]:
+                valid_layers.append(layer)
+                
         return valid_layers
-
+    
     def capture_and_create(self, point, button):
-        """Handle map clicks for polygon creation.
+        """
+        Handle canvas click events for polygon creation.
         
         Args:
             point: QgsPointXY representing the clicked point
             button: Mouse button pressed (1=left, 2=right)
         """
-        if button == 2:  # clique com botão direito = cancelar
-            self._cleanup_marker()
-            self.canvas.unsetMapTool(self.tool)
-            self.iface.messageBar().pushInfo('PolygonGenerator', 'Operação cancelada.')
+        # Right-click cancels the operation
+        if button == 2:
+            self._clear_marker()
+            self.canvas.unsetMapTool(self.map_tool)
+            self.iface.messageBar().pushInfo('PolygonGenerator', self.tr('Operation cancelled.', 'Operação cancelada.'))
             return
-
-        # Clean up existing marker
+            
+        # Clear existing marker and create new one
         if self.marker:
             self.marker.hide()
             self.marker = None
-
-        # Create new marker at clicked point
+            
         self._create_marker(point)
         self.process_polygon(point)
     
     def _create_marker(self, point):
-        """Create a visual marker at the clicked point.
+        """
+        Create a visual marker at the clicked point.
         
         Args:
             point: QgsPointXY where to place the marker
@@ -113,47 +156,46 @@ class QgisPolygonGenerator:
         self.marker.setIconType(QgsVertexMarker.ICON_CIRCLE)
         self.marker.setIconSize(12)
         self.marker.setPenWidth(3)
-
+    
     def process_polygon(self, point):
-        """Process polygon creation from the clicked point.
-        
-        Creates a temporary layer with all valid geometries, runs polygonize,
-        and selects the polygon containing the clicked point.
+        """
+        Process the polygon generation at the specified point.
         
         Args:
-            point: QgsPointXY representing the clicked point
+            point: QgsPointXY representing the center point
         """
         pt = QgsPointXY(point)
         center_geometry = QgsGeometry.fromPointXY(pt)
-
-        # Create temporary layer for polygonization
         temp_layer = self._create_temp_layer()
         features = self._collect_valid_features()
         
         if not features:
-            self.iface.messageBar().pushWarning('PolygonGenerator', 'Nenhuma geometria válida encontrada.')
-            self._cleanup_marker()
+            self.iface.messageBar().pushWarning('PolygonGenerator', self.tr('No valid geometry found.', 'Nenhuma geometria válida encontrada.'))
+            self._clear_marker()
             return
-
+            
+        # Add features to temporary layer
         temp_layer.dataProvider().addFeatures(features)
         temp_layer.updateExtents()
         
-        # Run polygonize and find containing polygon
-        polygon_layer = self._run_polygonize(temp_layer)
+        # Execute polygonize algorithm
+        polygon_layer = self._execute_polygonize(temp_layer)
         if not polygon_layer:
             return
-            
+        
+        # Find polygon containing the clicked point
         selected_polygon = self._find_containing_polygon(polygon_layer, center_geometry)
         if not selected_polygon:
-            self.iface.messageBar().pushWarning('PolygonGenerator', 'Nenhum polígono válido encontrado.')
-            self._cleanup_marker()
+            self.iface.messageBar().pushWarning('PolygonGenerator', self.tr('No valid polygon found.', 'Nenhum polígono válido encontrado.'))
+            self._clear_marker()
             return
         
-        # Add the selected polygon to output layer
+        # Add polygon to output layer
         self._add_polygon_to_output_layer(selected_polygon)
     
     def _create_temp_layer(self):
-        """Create temporary layer for polygonization.
+        """
+        Create a temporary memory layer for processing.
         
         Returns:
             QgsVectorLayer: Temporary line layer
@@ -161,12 +203,13 @@ class QgisPolygonGenerator:
         crs_authid = self.canvas.mapSettings().destinationCrs().authid()
         return QgsVectorLayer(
             f"LineString?crs={crs_authid}",
-            "_tmp_lines", 
+            "_temp_lines",
             "memory"
         )
     
     def _collect_valid_features(self):
-        """Collect valid features from visible layers.
+        """
+        Collect all valid features from visible layers.
         
         Returns:
             list: List of QgsFeature objects ready for polygonization
@@ -177,42 +220,43 @@ class QgisPolygonGenerator:
         for layer in QgsProject.instance().mapLayers().values():
             if not isinstance(layer, QgsVectorLayer):
                 continue
-
+                
             node = root.findLayer(layer.id())
             if node is None or not node.isVisible():
                 continue
-                
-            geom_type = QgsWkbTypes.geometryType(layer.wkbType())
-            if geom_type not in [QgsWkbTypes.LineGeometry, QgsWkbTypes.PolygonGeometry]:
+            
+            geometry_type = QgsWkbTypes.geometryType(layer.wkbType())
+            if geometry_type not in [QgsWkbTypes.LineGeometry, QgsWkbTypes.PolygonGeometry]:
                 continue
-                
+            
             for feature in layer.getFeatures():
                 geometry = feature.geometry()
                 if not geometry.isGeosValid() or geometry.isEmpty():
                     continue
-                    
+                
                 new_feature = QgsFeature()
-                if geom_type == QgsWkbTypes.PolygonGeometry:
-                    # converter polígono em linhas (contorno)
+                
+                # Convert polygon boundaries to lines
+                if geometry_type == QgsWkbTypes.PolygonGeometry:
                     boundaries = geometry.convertToType(QgsWkbTypes.LineGeometry, True)
                     if boundaries and not boundaries.isEmpty():
                         new_feature.setGeometry(boundaries)
                         features.append(new_feature)
                 else:
-                    # Use line geometry directly
                     new_feature.setGeometry(geometry)
                     features.append(new_feature)
-                    
+        
         return features
-
-    def _run_polygonize(self, temp_layer):
-        """Run the polygonize algorithm on the temporary layer.
+    
+    def _execute_polygonize(self, temp_layer):
+        """
+        Execute the QGIS polygonize algorithm.
         
         Args:
-            temp_layer: QgsVectorLayer with line geometries
+            temp_layer: QgsVectorLayer containing line geometries
             
         Returns:
-            QgsVectorLayer: Polygonized layer or None if failed
+            QgsVectorLayer or None: Resulting polygon layer or None if failed
         """
         try:
             result = processing.run(
@@ -221,70 +265,90 @@ class QgisPolygonGenerator:
             )
             return result['OUTPUT']
         except Exception as e:
-            self.iface.messageBar().pushCritical('PolygonGenerator', f'Erro ao executar polygonize: {str(e)}')
-            self._cleanup_marker()
+            QMessageBox.critical(
+                None, 
+                self.tr("Error", "Erro"), 
+                self.tr(f'Error executing polygonize: {str(e)}', f'Erro ao executar poligonização: {str(e)}')
+            )
+            self._clear_marker()
             return None
     
     def _find_containing_polygon(self, polygon_layer, center_geometry):
-        """Find the polygon that contains the clicked point.
+        """
+        Find the polygon that contains the center point.
         
         Args:
-            polygon_layer: QgsVectorLayer with polygons
-            center_geometry: QgsGeometry of the clicked point
+            polygon_layer: QgsVectorLayer containing polygons
+            center_geometry: QgsGeometry of the center point
             
         Returns:
-            QgsGeometry: The containing polygon or None if not found
+            QgsGeometry or None: The containing polygon geometry
         """
         for feature in polygon_layer.getFeatures():
             geometry = feature.geometry()
             if geometry.contains(center_geometry) and geometry.isGeosValid():
                 return geometry
         return None
-
+    
     def _add_polygon_to_output_layer(self, polygon_geometry):
-        """Add the selected polygon to the output layer.
+        """
+        Add the generated polygon to the output layer.
         
         Args:
             polygon_geometry: QgsGeometry of the polygon to add
         """
         output_layer = self._get_or_create_output_layer()
         
+        # Start editing if not already in edit mode
         if not output_layer.isEditable():
             output_layer.startEditing()
         
         # Check if polygon already exists
         if self._polygon_exists(output_layer, polygon_geometry):
-            self.iface.messageBar().pushInfo('PolygonGenerator', 'Polígono já existe.')
-            self._cleanup_marker()
+            self.iface.messageBar().pushInfo('PolygonGenerator', self.tr('Polygon already exists.', 'Polígono já existe.'))
+            self._clear_marker()
             return
         
-        # Create and add new feature
+        # Create and add the feature
         feature = self._create_polygon_feature(output_layer, polygon_geometry)
         if not output_layer.addFeature(feature):
-            self.iface.messageBar().pushCritical('PolygonGenerator', 'Erro ao adicionar feição.')
-            self._cleanup_marker()
+            QMessageBox.critical(
+                None, 
+                self.tr("Error", "Erro"), 
+                self.tr('Error adding feature.', 'Erro ao adicionar feição.')
+            )
+            self._clear_marker()
             return
         
-        # Update layer and interface
+        # Update layer display
         output_layer.updateExtents()
         output_layer.triggerRepaint()
         self.canvas.refreshAllLayers()
         
+        # Log success message
         feature_id = feature.attribute('id')
-        QgsMessageLog.logMessage(f'Feição adicionada com ID {feature_id}. Total: {output_layer.featureCount()}', 'PolygonGenerator', Qgis.Info)
-        self.iface.messageBar().pushInfo('PolygonGenerator', f'Polígono adicionado com ID {feature_id}. A camada está em modo de edição.')
+        QgsMessageLog.logMessage(
+            self.tr(f'Feature added with ID {feature_id}. Total: {output_layer.featureCount()}', f'Feição adicionada com ID {feature_id}. Total: {output_layer.featureCount()}'),
+            'PolygonGenerator',
+            Qgis.Info
+        )
+        self.iface.messageBar().pushInfo(
+            'PolygonGenerator',
+            self.tr(f'Polygon added with ID {feature_id}. Layer in edit mode.', f'Polígono adicionado com ID {feature_id}. Camada em modo de edição.')
+        )
         
-        self._cleanup_marker()
+        self._clear_marker()
     
     def _get_or_create_output_layer(self):
-        """Get existing output layer or create a new one.
+        """
+        Get existing output layer or create a new one.
         
         Returns:
-            QgsVectorLayer: The output layer for created polygons
+            QgsVectorLayer: The output layer for generated polygons
         """
-        # Look for existing output layer
+        # Check if output layer already exists
         for layer in QgsProject.instance().mapLayers().values():
-            if (layer.name() == self.CAMADA_SAIDA and 
+            if (layer.name() == self.OUTPUT_LAYER_NAME and
                 isinstance(layer, QgsVectorLayer)):
                 return layer
         
@@ -292,30 +356,32 @@ class QgisPolygonGenerator:
         crs_authid = self.canvas.mapSettings().destinationCrs().authid()
         output_layer = QgsVectorLayer(
             f"Polygon?crs={crs_authid}",
-            self.CAMADA_SAIDA, 
+            self.OUTPUT_LAYER_NAME,
             "memory"
         )
         
-        # Add fields
+        # Add fields to the layer
         provider = output_layer.dataProvider()
         provider.addAttributes([
             QgsField('id', QVariant.String),
-            QgsField('descricao', QVariant.String),
+            QgsField('description', QVariant.String),
             QgsField('area_otf', QVariant.Double)
         ])
         output_layer.updateFields()
         
-        # Set symbology
+        # Set layer symbology
         symbol = QgsSymbol.defaultSymbol(output_layer.geometryType())
         symbol.setColor(QColor(255, 0, 0, 100))
         renderer = QgsSingleSymbolRenderer(symbol)
         output_layer.setRenderer(renderer)
         
+        # Add layer to project
         QgsProject.instance().addMapLayer(output_layer)
         return output_layer
     
     def _polygon_exists(self, layer, geometry):
-        """Check if a polygon with the same geometry already exists.
+        """
+        Check if a polygon with the same geometry already exists.
         
         Args:
             layer: QgsVectorLayer to check
@@ -330,7 +396,8 @@ class QgisPolygonGenerator:
         return False
     
     def _create_polygon_feature(self, layer, geometry):
-        """Create a new polygon feature with attributes.
+        """
+        Create a new polygon feature with calculated attributes.
         
         Args:
             layer: QgsVectorLayer where the feature will be added
@@ -345,42 +412,78 @@ class QgisPolygonGenerator:
         # Generate unique ID
         feature_id = str(uuid.uuid4()).replace('{', '').replace('}', '')
         
-        # Set attributes
+        # Initialize attributes array
         attributes = [None] * layer.fields().count()
         attributes[layer.fields().indexFromName('id')] = feature_id
-        attributes[layer.fields().indexFromName('descricao')] = None
+        attributes[layer.fields().indexFromName('description')] = None
         
-        # Calculate area in metric system (EPSG:31985 - SIRGAS 2000 / UTM zone 25S)
+        # Calculate area in target CRS (EPSG:31985)
         try:
             source_crs = self.canvas.mapSettings().destinationCrs()
-            if source_crs.isGeographic():
-                # se for geográfico (graus), converte para projetado em metros
-                target_crs = QgsCoordinateReferenceSystem('EPSG:31985')  # SIRGAS 2000 / UTM 25S
-            else:
-                target_crs = source_crs
-
+            target_crs = QgsCoordinateReferenceSystem('EPSG:31985')
+            
+            if not target_crs.isValid():
+                QgsMessageLog.logMessage(
+                    "Target CRS (EPSG:31985) invalid.",
+                    'PolygonGenerator',
+                    Qgis.Critical
+                )
+                attributes[layer.fields().indexFromName('area_otf')] = 0.0
+                feature.setAttributes(attributes)
+                return feature
+            
+            # Transform geometry to target CRS
             transform_context = QgsProject.instance().transformContext()
             xform = QgsCoordinateTransform(source_crs, target_crs, transform_context)
-
-            geom_m = geometry.clone()
-            geom_m.transform(xform)
-            attributes[layer.fields().indexFromName('area_otf')] = geom_m.area()
+            
+            geom_transformed = QgsGeometry(geometry)
+            transform_result = geom_transformed.transform(xform)
+            
+            if transform_result != 0:
+                QgsMessageLog.logMessage(
+                    f"Coordinate transformation error: {transform_result}",
+                    'PolygonGenerator',
+                    Qgis.Warning
+                )
+                attributes[layer.fields().indexFromName('area_otf')] = 0.0
+            elif geom_transformed.isEmpty() or not geom_transformed.isGeosValid():
+                QgsMessageLog.logMessage(
+                    "Empty or invalid geometry after transformation.",
+                    'PolygonGenerator',
+                    Qgis.Warning
+                )
+                attributes[layer.fields().indexFromName('area_otf')] = 0.0
+            else:
+                area_m2 = geom_transformed.area()
+                attributes[layer.fields().indexFromName('area_otf')] = area_m2
+                QgsMessageLog.logMessage(
+                    f"Calculated area: {area_m2} m²",
+                    'PolygonGenerator',
+                    Qgis.Info
+                )
+                
         except Exception as e:
-            QgsMessageLog.logMessage(f"Erro no cálculo de área: {str(e)}", 'PolygonGenerator', Qgis.Warning)
-            attributes[layer.fields().indexFromName('area_otf')] = geometry.area()
+            QgsMessageLog.logMessage(
+                f"Error calculating area: {str(e)}",
+                'PolygonGenerator',
+                Qgis.Critical
+            )
+            attributes[layer.fields().indexFromName('area_otf')] = 0.0
         
         feature.setAttributes(attributes)
         return feature
-
-    def _cleanup_marker(self):
+    
+    def _clear_marker(self):
+        """
+        Clear the visual marker from the canvas.
+        """
         if self.marker:
             self.marker.hide()
             self.marker = None
-
+    
     def unload(self):
-        try:
-            self.tool.canvasClicked.disconnect(self.capture_and_create)
-        except Exception:
-            pass
-        self._cleanup_marker()
-        self.canvas.unsetMapTool(self.tool)
+        """
+        Clean up when the tool is unloaded.
+        """
+        self.canvas.unsetMapTool(self.map_tool)
+        self._clear_marker()

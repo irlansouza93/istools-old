@@ -5,5 +5,6 @@
         <file>icon_polygon_generator.png</file>
         <file>icon_bounded_polygon_generator.png</file>
         <file>icon_point_on_surface_generator.png</file>
+        <file>icon_intersection_line.png</file>
     </qresource>
 </RCC>
