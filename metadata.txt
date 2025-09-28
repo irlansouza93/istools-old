@@ -36,7 +36,7 @@ email=irlansouza193@gmail.com
 # Project links
 repository=https://github.com/irlansouza93/istools
 tracker=https://github.com/irlansouza93/istools/issues
-homepage=https://github.com/irlansouza93/istools
+homepage=https://irlansouza93.github.io/istools-website/
 
 # Visual and categorization
 icon=icon_istools.png
