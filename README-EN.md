@@ -7,7 +7,7 @@
 **Advanced Vector Processing Tools for QGIS**
 
 [![QGIS Version](https://img.shields.io/badge/QGIS-3.0+-brightgreen.svg)](https://qgis.org)
-[![Version](https://img.shields.io/badge/Version-1.3-blue.svg)](https://github.com/irlansouza/istools)
+[![Version](https://img.shields.io/badge/Version-1.3-blue.svg)](https://github.com/irlansouza93/istools)
 [![License](https://img.shields.io/badge/License-GPL--3.0-red.svg)](LICENSE.txt)
 [![Language](https://img.shields.io/badge/Language-Python-yellow.svg)](https://python.org)
 
@@ -73,7 +73,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/irlansouza/istools.git
+git clone https://github.com/irlansouza93/istools.git
 
 # Navigate to QGIS plugins directory
 cd ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/
@@ -168,7 +168,7 @@ Perfect for inserting shared vertices at line intersections:
 We welcome contributions! Here's how you can help:
 
 ### 🐛 Bug Reports
-- Use the [GitHub Issues](https://github.com/irlansouza/istools/issues) page
+- Use the [GitHub Issues](https://github.com/irlansouza93/istools/issues) page
 - Provide detailed reproduction steps
 - Include QGIS version and system information
 
@@ -194,9 +194,9 @@ This project is licensed under the **GNU General Public License v3.0** - see the
 
 <div align="center">
 
-**Developed by [Irlan Souza](https://github.com/irlansouza)**
+**Developed by [Irlan Souza](https://github.com/irlansouza93)**
 
-[![GitHub](https://img.shields.io/badge/GitHub-irlansouza-black.svg?logo=github)](https://github.com/irlansouza)
+[![GitHub](https://img.shields.io/badge/GitHub-irlansouza93-black.svg?logo=github)](https://github.com/irlansouza93)
 [![Email](https://img.shields.io/badge/Email-Contact-blue.svg?logo=gmail)](mailto:irlansouza@example.com)
 
 ---

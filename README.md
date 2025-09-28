@@ -7,7 +7,7 @@
 **Ferramentas Avançadas de Processamento Vetorial para QGIS**
 
 [![Versão QGIS](https://img.shields.io/badge/QGIS-3.0+-brightgreen.svg)](https://qgis.org)
-[![Versão](https://img.shields.io/badge/Versão-1.3-blue.svg)](https://github.com/irlansouza/istools)
+[![Versão](https://img.shields.io/badge/Versão-1.3-blue.svg)](https://github.com/irlansouza93/istools)
 [![Licença](https://img.shields.io/badge/Licença-GPL--3.0-red.svg)](LICENSE.txt)
 [![Linguagem](https://img.shields.io/badge/Linguagem-Python-yellow.svg)](https://python.org)
 
@@ -73,7 +73,7 @@
 
 ```bash
 # Clone o repositório
-git clone https://github.com/irlansouza/istools.git
+git clone https://github.com/irlansouza93/istools.git
 
 # Navegue para o diretório de plugins do QGIS
 cd ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/
@@ -168,7 +168,7 @@ Perfeita para inserir vértices compartilhados em interseções de linhas:
 Damos as boas-vindas às contribuições! Veja como você pode ajudar:
 
 ### 🐛 Relatórios de Bugs
-- Use a página [GitHub Issues](https://github.com/irlansouza/istools/issues)
+- Use a página [GitHub Issues](https://github.com/irlansouza93/istools/issues)
 - Forneça passos detalhados de reprodução
 - Inclua a versão do QGIS e informações do sistema
 
@@ -194,9 +194,9 @@ Este projeto está licenciado sob a **Licença Pública Geral GNU v3.0** - veja 
 
 <div align="center">
 
-**Desenvolvido por [Irlan Souza](https://github.com/irlansouza)**
+**Desenvolvido por [Irlan Souza](https://github.com/irlansouza93)**
 
-[![GitHub](https://img.shields.io/badge/GitHub-irlansouza-black.svg?logo=github)](https://github.com/irlansouza)
+[![GitHub](https://img.shields.io/badge/GitHub-irlansouza93-black.svg?logo=github)](https://github.com/irlansouza93)
 [![Email](https://img.shields.io/badge/Email-Contato-blue.svg?logo=gmail)](mailto:irlansouza@example.com)
 
 ---
