@@ -34,9 +34,9 @@ author=Irlan Souza, 3° Sgt Brazilian Army
 email=irlansouza193@gmail.com
 
 # Project links
-repository=https://github.com/irlansouza93/istools-qgis-plugin
-tracker=https://github.com/irlansouza93/istools-qgis-plugin/issues
-homepage=https://github.com/irlansouza93/istools-qgis-plugin
+repository=https://github.com/irlansouza93/istools
+tracker=https://github.com/irlansouza93/istools/issues
+homepage=https://github.com/irlansouza93/istools
 
 # Visual and categorization
 icon=icon_istools.png
