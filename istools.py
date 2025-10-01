@@ -152,7 +152,7 @@ class ISTools:
         Setup the Extend Lines tool with its action, icon, and menu entry.
         """
         self.extend_lines = ExtendLines(self.iface)
-        extend_icon_path = os.path.join(self.plugin_dir, "icon_extend_lines.png")
+        extend_icon_path = os.path.join(self.plugin_dir, "icons", "icon_extend_lines.png")
         
         extend_action = QAction(
             QIcon(extend_icon_path),
@@ -169,7 +169,7 @@ class ISTools:
         Setup the Polygon Generator tool with its action, icon, and menu entry.
         """
         self.polygon_generator = QgisPolygonGenerator(self.iface)
-        polygon_icon_path = os.path.join(self.plugin_dir, "icon_polygon_generator.png")
+        polygon_icon_path = os.path.join(self.plugin_dir, "icons", "icon_polygon_generator.png")
         
         polygon_action = QAction(
             QIcon(polygon_icon_path),
@@ -187,8 +187,7 @@ class ISTools:
         """
         self.bounded_polygon_generator = BoundedPolygonGenerator(self.iface)
         bounded_polygon_icon_path = os.path.join(
-            self.plugin_dir, 
-            "icon_bounded_polygon_generator.png"
+            self.plugin_dir, "icons", "icon_bounded_polygon_generator.png"
         )
         
         bounded_polygon_action = QAction(
@@ -211,8 +210,7 @@ class ISTools:
         """
         self.point_on_surface_generator = PointOnSurfaceGenerator(self.iface)
         point_icon_path = os.path.join(
-            self.plugin_dir, 
-            "icon_point_on_surface_generator.png"
+            self.plugin_dir, "icons", "icon_point_on_surface_generator.png"
         )
         
         point_action = QAction(
@@ -231,8 +229,7 @@ class ISTools:
         """
         self.intersection_line_tool = IntersectionLineTool(self.iface)
         intersection_icon_path = os.path.join(
-            self.plugin_dir, 
-            "icon_intersection_line.png"
+            self.plugin_dir, "icons", "icon_intersection_line.png"
         )
         
         intersection_action = QAction(

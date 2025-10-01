@@ -43,6 +43,13 @@ class BoundedPolygonGenerator:
     and delimited by line or polygon layers through a dialog interface.
     """
     
+    # Nome do grupo de saída
+    OUTPUT_GROUP_NAME = "istools-output"
+    
+    def get_output_layer_name(self):
+        """Get translated output layer name."""
+        return self.tr("Bounded Polygons", "Polígonos Delimitados")
+    
     def tr(self, *string):
         """
         Traduz strings usando o novo sistema de tradução bilíngue.
@@ -88,6 +95,13 @@ class PolygonGeneratorDialog(QDialog):
     This dialog allows users to select frame layers and delimiter layers,
     then generates bounded polygons based on the selected configuration.
     """
+    
+    # Nome do grupo de saída
+    OUTPUT_GROUP_NAME = "istools-output"
+    
+    def get_output_layer_name(self):
+        """Get translated output layer name."""
+        return self.tr("Bounded Polygons", "Polígonos Delimitados")
     
     def tr(self, *string):
         """
@@ -194,9 +208,10 @@ class PolygonGeneratorDialog(QDialog):
             project_crs = QgsProject.instance().crs().authid()
             
             # Create output layer
+            output_layer_name = self.get_output_layer_name()
             output_layer = QgsVectorLayer(
                 f"Polygon?crs={project_crs}", 
-                "BOUNDED_POLYGONS", 
+                output_layer_name, 
                 "memory"
             )
             provider = output_layer.dataProvider()
@@ -384,13 +399,22 @@ class PolygonGeneratorDialog(QDialog):
             output_layer.updateExtents()
             output_layer.triggerRepaint()
             self.iface.mapCanvas().refreshAllLayers()
-            QgsProject.instance().addMapLayer(output_layer)
+            
+            # Create or get the istools-output group
+            root = QgsProject.instance().layerTreeRoot()
+            group = root.findGroup(self.OUTPUT_GROUP_NAME)
+            if not group:
+                group = root.insertGroup(0, self.OUTPUT_GROUP_NAME)
+            
+            # Add layer to project and move to group
+            QgsProject.instance().addMapLayer(output_layer, False)
+            group.addLayer(output_layer)
             
             # Close dialog and show success message
             self.close()
             self.iface.messageBar().pushSuccess(
                 self.tr("Success", "Sucesso"), 
-                self.tr(f"Layer 'BOUNDED_POLYGONS' created successfully. {num_features_added} features added.", f"Camada 'BOUNDED_POLYGONS' criada com sucesso. {num_features_added} feições adicionadas.")
+                self.tr(f"Layer '{output_layer_name}' created successfully. {num_features_added} features added.", f"Camada '{output_layer_name}' criada com sucesso. {num_features_added} feições adicionadas.")
             )
             
         except Exception as e:

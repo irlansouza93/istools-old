@@ -160,7 +160,7 @@ class TestIntersectionLineIntegration(unittest.TestCase):
         """Test that intersection line icon resource exists."""
         try:
             # Check if icon file exists
-            icon_path = os.path.join(plugin_dir, 'icon_intersection_line.png')
+            icon_path = os.path.join(plugin_dir, 'icons', 'icon_intersection_line.png')
             self.assertTrue(os.path.exists(icon_path), "Intersection line icon file exists")
             
         except Exception as e:

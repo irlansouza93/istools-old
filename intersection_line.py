@@ -42,6 +42,9 @@ class IntersectionLineTool:
     """
 
     TOOL_NAME = "Intersection Line"
+    
+    # Nome do grupo de saída (não usado nesta ferramenta, mas mantido para consistência)
+    OUTPUT_GROUP_NAME = "istools-output"
 
     def __init__(self, iface):
         self.iface = iface

@@ -37,7 +37,7 @@ class ISToolsResourcesTest(unittest.TestCase):
 
     def test_icon_istools(self):
         """Test icon_istools.png can be loaded."""
-        icon_path = os.path.join(self.plugin_dir, 'icon_istools.png')
+        icon_path = os.path.join(self.plugin_dir, 'icons', 'icon_istools.png')
         self.assertTrue(os.path.exists(icon_path), f"Icon file not found: {icon_path}")
         icon = QIcon(icon_path)
         self.assertIsNotNone(icon)
@@ -46,7 +46,7 @@ class ISToolsResourcesTest(unittest.TestCase):
 
     def test_icon_extend_lines(self):
         """Test icon_extend_lines.png can be loaded."""
-        icon_path = os.path.join(self.plugin_dir, 'icon_extend_lines.png')
+        icon_path = os.path.join(self.plugin_dir, 'icons', 'icon_extend_lines.png')
         self.assertTrue(os.path.exists(icon_path), f"Icon file not found: {icon_path}")
         icon = QIcon(icon_path)
         self.assertIsNotNone(icon)
@@ -55,7 +55,7 @@ class ISToolsResourcesTest(unittest.TestCase):
 
     def test_icon_polygon_generator(self):
         """Test icon_polygon_generator.png can be loaded."""
-        icon_path = os.path.join(self.plugin_dir, 'icon_polygon_generator.png')
+        icon_path = os.path.join(self.plugin_dir, 'icons', 'icon_polygon_generator.png')
         self.assertTrue(os.path.exists(icon_path), f"Icon file not found: {icon_path}")
         icon = QIcon(icon_path)
         self.assertIsNotNone(icon)
@@ -64,7 +64,7 @@ class ISToolsResourcesTest(unittest.TestCase):
 
     def test_icon_bounded_polygon_generator(self):
         """Test icon_bounded_polygon_generator.png can be loaded."""
-        icon_path = os.path.join(self.plugin_dir, 'icon_bounded_polygon_generator.png')
+        icon_path = os.path.join(self.plugin_dir, 'icons', 'icon_bounded_polygon_generator.png')
         self.assertTrue(os.path.exists(icon_path), f"Icon file not found: {icon_path}")
         icon = QIcon(icon_path)
         self.assertIsNotNone(icon)
@@ -73,7 +73,7 @@ class ISToolsResourcesTest(unittest.TestCase):
 
     def test_icon_point_on_surface_generator(self):
         """Test icon_point_on_surface_generator.png can be loaded."""
-        icon_path = os.path.join(self.plugin_dir, 'icon_point_on_surface_generator.png')
+        icon_path = os.path.join(self.plugin_dir, 'icons', 'icon_point_on_surface_generator.png')
         self.assertTrue(os.path.exists(icon_path), f"Icon file not found: {icon_path}")
         icon = QIcon(icon_path)
         self.assertIsNotNone(icon)

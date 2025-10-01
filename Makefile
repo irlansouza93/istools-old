@@ -42,6 +42,7 @@ SOURCES = \
 	bounded_polygon_generator.py \
 	extend_lines.py \
 	point_on_surface_generator.py \
+	intersection_line.py \
 	translations/translate.py \
 	translations/dictionary.py
 
@@ -54,6 +55,7 @@ PY_FILES = \
 	bounded_polygon_generator.py \
 	extend_lines.py \
 	point_on_surface_generator.py \
+	intersection_line.py \
 	resources.py \
 	translations/__init__.py \
 	translations/translate.py \
@@ -61,16 +63,9 @@ PY_FILES = \
 
 UI_FILES = 
 
-EXTRAS = metadata.txt \
-	icon_istools.png \
-	icon_polygon_generator.png \
-	icon_bounded_polygon_generator.png \
-	icon_extend_lines.png \
-	icon_point_on_surface_generator.png \
-	LICENSE.txt \
-	README.md
+EXTRAS = metadata.txt LICENSE README.md README-EN.md
 
-EXTRA_DIRS = i18n translations
+EXTRA_DIRS = i18n translations icons
 
 COMPILED_RESOURCE_FILES = resources.py
 
@@ -145,9 +140,9 @@ deploy: compile doc transcompile
 	cp -vf $(COMPILED_RESOURCE_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vf $(EXTRAS) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vfr i18n $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
+	cp -vfr translations $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
+	cp -vfr icons $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vfr $(HELP) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/help
-	# Copy extra directories if any
-	(foreach EXTRA_DIR,(EXTRA_DIRS), cp -R (EXTRA_DIR) (HOME)/(QGISDIR)/python/plugins/(PLUGINNAME)/;)
 
 
 # The dclean target removes compiled python files from plugin directory

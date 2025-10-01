@@ -2,9 +2,17 @@
 
 <div align="center">
 
-![ISTools Logo](icon_istools.png)
+![ISTools Logo](icons/icon_istools.png)
 
 **Advanced Vector Processing Tools for QGIS**
+
+<div align="center">
+  
+🌐 **[🚀 VISIT OUR OFFICIAL WEBSITE - CLICK HERE! 🚀](https://irlansouza93.github.io/istools-website/)**
+
+*Discover more plugins, tutorials and exclusive resources for QGIS!*
+
+</div>
 
 [![QGIS Version](https://img.shields.io/badge/QGIS-3.0+-brightgreen.svg)](https://qgis.org)
 [![Version](https://img.shields.io/badge/Version-1.3-blue.svg)](https://github.com/irlansouza93/istools)
@@ -28,11 +36,11 @@
 
 | Tool | Description | Icon |
 |------|-------------|------|
-| **🔗 Extend Lines** | Extend line geometries by specified distances at start/end points | ![Extend Lines](icon_extend_lines.png) |
-| **📐 Polygon Generator** | Create polygons from selected points with customizable parameters | ![Polygon Generator](icon_polygon_generator.png) |
-| **🎯 Bounded Polygon Generator** | Generate polygons within specified boundary constraints | ![Bounded Polygon](icon_bounded_polygon_generator.png) |
-| **📍 Point on Surface Generator** | Generate representative points guaranteed to be on polygon surfaces | ![Point on Surface](icon_point_on_surface_generator.png) |
-| **✂️ Intersection Line** | Insert shared vertices at line intersections within a selected area | ![Intersection Line](icon_intersection_line.png) |
+| **🔗 Extend Lines** | Extend line geometries by specified distances at start/end points | ![Extend Lines](icons/icon_extend_lines.png) |
+| **📐 Polygon Generator** | Create polygons from selected points with customizable parameters | ![Polygon Generator](icons/icon_polygon_generator.png) |
+| **🎯 Bounded Polygon Generator** | Generate polygons within specified boundary constraints | ![Bounded Polygon](icons/icon_bounded_polygon_generator.png) |
+| **📍 Point on Surface Generator** | Generate representative points guaranteed to be on polygon surfaces | ![Point on Surface](icons/icon_point_on_surface_generator.png) |
+| **✂️ Intersection Line** | Insert shared vertices at line intersections within a selected area | ![Intersection Line](icons/icon_intersection_line.png) |
 
 ### 🚀 Key Capabilities
 

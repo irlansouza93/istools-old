@@ -1,10 +1,10 @@
 <RCC>
-    <qresource prefix="/plugins/istools">
-        <file>icon_istools.png</file>
-        <file>icon_extend_lines.png</file>
-        <file>icon_polygon_generator.png</file>
-        <file>icon_bounded_polygon_generator.png</file>
-        <file>icon_point_on_surface_generator.png</file>
-        <file>icon_intersection_line.png</file>
+    <qresource prefix="/plugins/istools" >
+        <file>icons/icon_istools.png</file>
+        <file>icons/icon_extend_lines.png</file>
+        <file>icons/icon_polygon_generator.png</file>
+        <file>icons/icon_bounded_polygon_generator.png</file>
+        <file>icons/icon_point_on_surface_generator.png</file>
+        <file>icons/icon_intersection_line.png</file>
     </qresource>
 </RCC>

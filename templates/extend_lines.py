@@ -40,9 +40,6 @@ class ExtendLines:
     with other line features in the project. The extension is performed in the
     direction of the line's bearing at each endpoint.
     """
-    
-    # Nome do grupo de saída (não usado nesta ferramenta, mas mantido para consistência)
-    OUTPUT_GROUP_NAME = "istools-output"
 
     def tr(self, *string):
         """

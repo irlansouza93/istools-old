@@ -4,12 +4,12 @@
 [general]
 # Plugin identification
 name=ISTools
-qgisMinimumVersion=3.0
+qgisMinimumVersion=3.24.3
 qgisMaximumVersion=3.99
 
 # Plugin description
-description=🔧 Professional vectorization toolkit for QGIS
-about=🚀 **ISTools** (Irlan Souza Tools) is a comprehensive QGIS plugin designed for professional GIS workflows, providing essential vectorization tools to streamline vector operations.
+description=🔧 Professional vectorization toolkit for QGIS with enhanced documentation and multilingual support
+about=🚀 **ISTools** (Irlan Souza Tools) is a comprehensive QGIS plugin designed for professional GIS workflows, providing essential vectorization tools to streamline vector operations with enhanced documentation and multilingual support.
 
     **🛠️ Core Features:**
     • **Extend Lines**: Automatically extend loose line endpoints to connect with nearby features using intelligent snapping algorithms
@@ -21,15 +21,23 @@ about=🚀 **ISTools** (Irlan Souza Tools) is a comprehensive QGIS plugin design
     **✨ Key Benefits:**
     • Intuitive user interfaces with modern design principles
     • Comprehensive error handling and user feedback
-    • Multi-language support (English/Portuguese)
+    • Multi-language support (English/Portuguese) with improved translations
     • Compatible with various coordinate reference systems
     • Optimized for professional GIS workflows
     • Cross-platform compatibility (Windows, Linux, macOS)
+    • Complete Sphinx documentation system with HTML generation
+    • Updated project metadata and configuration files
+
+    **📚 Documentation:**
+    • Professional Sphinx-based documentation system
+    • HTML documentation generation with modern themes
+    • Comprehensive user guides and API references
+    • Multi-format documentation support (HTML, PDF, ePub)
 
     **🎯 Perfect for:** Cartographers, GIS analysts, surveyors, urban planners, and geospatial professionals working with vector data processing and geometric operations.
 
 # Version and authorship
-version=1.4
+version=1.4.1
 author=Irlan Souza, 3° Sgt Brazilian Army
 email=irlansouza193@gmail.com
 
@@ -39,11 +47,11 @@ tracker=https://github.com/irlansouza93/istools/issues
 homepage=https://irlansouza93.github.io/istools-website/
 
 # Visual and categorization
-icon=icon_istools.png
+icon=icons/icon_istools.png
 category=Vector
 
 # Search and discovery
-tags=vectorization,geometry,analysis,polygon,lines,spatial,processing,extend,generator,bounded,surface,intersection,professional,toolkit,cartography,surveying,gis
+tags=vectorization,geometry,analysis,polygon,lines,spatial,processing,extend,generator,bounded,surface,intersection,professional,toolkit,cartography,surveying,gis,documentation,sphinx,multilingual,enhanced
 
 # Plugin characteristics
 experimental=False
@@ -52,7 +60,17 @@ server=False
 hasProcessingProvider=False
 
 # Version history
-changelog=🚀 **Version 1.4** (Latest)
+changelog=🚀 **Version 1.4.1** (Latest)
+    • Enhanced Sphinx documentation system with professional HTML generation
+    • Updated project metadata and configuration files for better compatibility
+    • Improved multilingual support with refined English and Portuguese translations
+    • Corrected documentation references and template names throughout the project
+    • Updated copyright information and version consistency across all files
+    • Enhanced build system with cross-platform Makefile and batch file support
+    • Comprehensive documentation structure with modern Sphinx themes
+    • Updated project information and branding consistency
+    
+    🚀 **Version 1.4**
     • Added IntersectionLineTool for inserting shared vertices at line intersections
     • Enhanced topology management capabilities
     • Improved rectangle selection interface for intersection processing

@@ -2,15 +2,22 @@
 
 <div align="center">
 
-![Logo ISTools](icon_istools.png)
+![Logo ISTools](icons/icon_istools.png)
 
 **Ferramentas Avançadas de Processamento Vetorial para QGIS**
 
+<div align="center">
+  
+🌐 **[🚀 VISITE NOSSO SITE OFICIAL - CLIQUE AQUI! 🚀](https://irlansouza93.github.io/istools-website/)**
+
+*Descubra mais plugins, tutoriais e recursos exclusivos para QGIS!*
+
+</div>
+
 [![Versão QGIS](https://img.shields.io/badge/QGIS-3.0+-brightgreen.svg)](https://qgis.org)
-[![Versão](https://img.shields.io/badge/Versão-1.3-blue.svg)](https://github.com/irlansouza93/istools)
+[![Versão](https://img.shields.io/badge/Versão-1.3-blue.svg)](https://github.com/irlansouza/istools)
 [![Licença](https://img.shields.io/badge/Licença-GPL--3.0-red.svg)](LICENSE.txt)
 [![Linguagem](https://img.shields.io/badge/Linguagem-Python-yellow.svg)](https://python.org)
-[![Website](https://img.shields.io/badge/Website-Oficial-orange.svg)](https://irlansouza93.github.io/istools-website/)
 
 *Aprimore seu fluxo de trabalho no QGIS com poderosas capacidades de processamento vetorial*
 
@@ -28,11 +35,11 @@
 
 | Ferramenta | Descrição | Ícone |
 |------------|-----------|-------|
-| **🔗 Estender Linhas** | Estende geometrias de linha por distâncias especificadas nos pontos inicial/final | ![Estender Linhas](icon_extend_lines.png) |
-| **📐 Gerador de Polígonos** | Cria polígonos a partir de pontos selecionados com parâmetros personalizáveis | ![Gerador de Polígonos](icon_polygon_generator.png) |
-| **🎯 Gerador de Polígonos Limitados** | Gera polígonos dentro de restrições de limite especificadas | ![Polígono Limitado](icon_bounded_polygon_generator.png) |
-| **📍 Gerador de Pontos na Superfície** | Gera pontos representativos garantidos de estar nas superfícies dos polígonos | ![Ponto na Superfície](icon_point_on_surface_generator.png) |
-| **✂️ Interseção de Linhas** | Insere vértices compartilhados nas interseções de linhas dentro de uma área selecionada | ![Interseção de Linhas](icon_intersection_line.png) |
+| **🔗 Estender Linhas** | Estende geometrias de linha por distâncias especificadas nos pontos inicial/final | ![Estender Linhas](icons/icon_extend_lines.png) |
+| **📐 Gerador de Polígonos** | Cria polígonos a partir de pontos selecionados com parâmetros personalizáveis | ![Gerador de Polígonos](icons/icon_polygon_generator.png) |
+| **🎯 Gerador de Polígonos Limitados** | Gera polígonos dentro de restrições de limite especificadas | ![Polígono Limitado](icons/icon_bounded_polygon_generator.png) |
+| **📍 Gerador de Pontos na Superfície** | Gera pontos representativos garantidos de estar nas superfícies dos polígonos | ![Ponto na Superfície](icons/icon_point_on_surface_generator.png) |
+| **✂️ Interseção de Linhas** | Insere vértices compartilhados nas interseções de linhas dentro de uma área selecionada | ![Interseção de Linhas](icons/icon_intersection_line.png) |
 
 ### 🚀 Capacidades Principais
 
@@ -169,7 +176,7 @@ Perfeita para inserir vértices compartilhados em interseções de linhas:
 Damos as boas-vindas às contribuições! Veja como você pode ajudar:
 
 ### 🐛 Relatórios de Bugs
-- Use a página [GitHub Issues](https://github.com/irlansouza93/istools/issues)
+- Use a página [GitHub Issues](https://github.com/irlansouza/istools/issues)
 - Forneça passos detalhados de reprodução
 - Inclua a versão do QGIS e informações do sistema
 
@@ -195,18 +202,10 @@ Este projeto está licenciado sob a **Licença Pública Geral GNU v3.0** - veja 
 
 <div align="center">
 
-**Desenvolvido por [Irlan Souza](https://github.com/irlansouza93)**
+**Desenvolvido por [Irlan Souza](https://github.com/irlansouza)**
 
-[![GitHub](https://img.shields.io/badge/GitHub-irlansouza93-black.svg?logo=github)](https://github.com/irlansouza93)
+[![GitHub](https://img.shields.io/badge/GitHub-irlansouza-black.svg?logo=github)](https://github.com/irlansouza)
 [![Email](https://img.shields.io/badge/Email-Contato-blue.svg?logo=gmail)](mailto:irlansouza@example.com)
-[![Website](https://img.shields.io/badge/Website-Tutoriais-orange.svg?logo=web)](https://irlansouza93.github.io/istools-website/)
-
-### 📚 **Documentação e Tutoriais**
-Visite o [**website oficial do ISTools**](https://irlansouza93.github.io/istools-website/) para:
-- 📖 Tutoriais detalhados de cada ferramenta
-- 🎥 Guias passo a passo
-- 📋 Exemplos práticos de uso
-- 🔄 Informações sobre atualizações
 
 ---
 

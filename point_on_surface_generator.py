@@ -46,6 +46,13 @@ class PointOnSurfaceGenerator:
     within the polygon boundaries.
     """
     
+    # Nome do grupo de saída
+    OUTPUT_GROUP_NAME = "istools-output"
+    
+    def get_output_layer_name(self):
+        """Get translated output layer name."""
+        return self.tr("Points on Surface", "Pontos na Superfície")
+    
     def tr(self, *string):
         """
         Traduz strings usando o novo sistema de tradução bilíngue.
@@ -171,8 +178,9 @@ class PointOnSurfaceGenerator:
         """
         # Check if point layer already exists
         point_layer = None
+        output_layer_name = self.get_output_layer_name()
         for layer in project.mapLayers().values():
-            if layer.name() == "POINTS_SURFACE":
+            if layer.name() == output_layer_name:
                 point_layer = layer
                 break
 
@@ -181,7 +189,7 @@ class PointOnSurfaceGenerator:
             crs = source_layer.crs().authid()
             point_layer = QgsVectorLayer(
                 f"Point?crs={crs}", 
-                "POINTS_SURFACE", 
+                output_layer_name, 
                 "memory"
             )
             
@@ -192,7 +200,16 @@ class PointOnSurfaceGenerator:
                 QgsField("coords", QVariant.String)
             ])
             point_layer.updateFields()
-            project.addMapLayer(point_layer)
+            
+            # Create or get the istools-output group
+            root = project.layerTreeRoot()
+            group = root.findGroup(self.OUTPUT_GROUP_NAME)
+            if not group:
+                group = root.insertGroup(0, self.OUTPUT_GROUP_NAME)
+            
+            # Add layer to project and move to group
+            project.addMapLayer(point_layer, False)
+            group.addLayer(point_layer)
             
         return point_layer
 

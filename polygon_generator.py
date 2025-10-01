@@ -46,7 +46,12 @@ class QgisPolygonGenerator:
     that contains the clicked point.
     """
     
-    OUTPUT_LAYER_NAME = "GENERATED_POLYGONS"
+    # Nome do grupo de saída
+    OUTPUT_GROUP_NAME = "istools-output"
+    
+    def get_output_layer_name(self):
+        """Get translated output layer name."""
+        return self.tr("Generated Polygons", "Polígonos Gerados")
     
     def tr(self, *string):
         """
@@ -339,6 +344,22 @@ class QgisPolygonGenerator:
         
         self._clear_marker()
     
+    class PolygonGenerator:
+        """
+        A QGIS tool for generating polygons from point collections.
+        
+        This class provides functionality to create polygon geometries from
+        selected point features using various generation methods.
+        """
+        
+        # Nome da camada de saída com tradução
+        def get_output_layer_name(self):
+            """Get translated output layer name."""
+            return self.tr("Generated Polygons", "Polígonos Gerados")
+        
+        # Nome do grupo de saída
+        OUTPUT_GROUP_NAME = "istools-output"
+    
     def _get_or_create_output_layer(self):
         """
         Get existing output layer or create a new one.
@@ -346,9 +367,11 @@ class QgisPolygonGenerator:
         Returns:
             QgsVectorLayer: The output layer for generated polygons
         """
+        output_layer_name = self.get_output_layer_name()
+        
         # Check if output layer already exists
         for layer in QgsProject.instance().mapLayers().values():
-            if (layer.name() == self.OUTPUT_LAYER_NAME and
+            if (layer.name() == output_layer_name and
                 isinstance(layer, QgsVectorLayer)):
                 return layer
         
@@ -356,7 +379,7 @@ class QgisPolygonGenerator:
         crs_authid = self.canvas.mapSettings().destinationCrs().authid()
         output_layer = QgsVectorLayer(
             f"Polygon?crs={crs_authid}",
-            self.OUTPUT_LAYER_NAME,
+            output_layer_name,
             "memory"
         )
         
@@ -375,8 +398,16 @@ class QgisPolygonGenerator:
         renderer = QgsSingleSymbolRenderer(symbol)
         output_layer.setRenderer(renderer)
         
-        # Add layer to project
-        QgsProject.instance().addMapLayer(output_layer)
+        # Create or get the istools-output group
+        root = QgsProject.instance().layerTreeRoot()
+        group = root.findGroup(self.OUTPUT_GROUP_NAME)
+        if not group:
+            group = root.insertGroup(0, self.OUTPUT_GROUP_NAME)
+        
+        # Add layer to project and move to group
+        QgsProject.instance().addMapLayer(output_layer, False)
+        group.addLayer(output_layer)
+        
         return output_layer
     
     def _polygon_exists(self, layer, geometry):
